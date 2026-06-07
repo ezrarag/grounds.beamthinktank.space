@@ -19,7 +19,7 @@ function readPublicSiteUrl(config: NGOConfig) {
 
   try {
     const parsed = new URL(config.siteUrl)
-    if (LOCAL_HOSTNAMES.has(parsed.hostname)) return null
+    if (LOCAL_HOSTNAMES.has(parsed.hostname) && process.env.NODE_ENV === 'production') return null
     return normalizeBaseUrl(parsed.toString())
   } catch {
     return null

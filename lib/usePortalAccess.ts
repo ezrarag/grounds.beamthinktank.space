@@ -54,8 +54,23 @@ export function usePortalAccess(config: NGOConfig) {
 
   useEffect(() => {
     let isCancelled = false
+    const loadingFallback = window.setTimeout(() => {
+      if (isCancelled) return
+
+      setState((current) => {
+        if (current.status !== 'loading') return current
+
+        return {
+          status: 'signed-out',
+          user: null,
+          role: 'community',
+        }
+      })
+    }, 3000)
 
     const unsubscribe = subscribeToAuth((user) => {
+      window.clearTimeout(loadingFallback)
+
       if (!user) {
         if (!isCancelled) {
           setState({
@@ -79,6 +94,7 @@ export function usePortalAccess(config: NGOConfig) {
 
     return () => {
       isCancelled = true
+      window.clearTimeout(loadingFallback)
       unsubscribe()
     }
   }, [])

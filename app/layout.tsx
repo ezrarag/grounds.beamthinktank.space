@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   metadataBase: buildMetadataBase(groundsConfig.siteUrl),
   title: groundsConfig.name,
   description: groundsConfig.description,
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

@@ -1,9 +1,10 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Lock, ShieldCheck } from 'lucide-react'
 import { MemberDashboard } from '@/components/MemberDashboard'
+import { signInWithGoogle } from '@/lib/firebase'
 import { usePortalAccess } from '@/lib/usePortalAccess'
 import type { NGOConfig } from '@/lib/ngoConfig'
 
@@ -19,6 +20,21 @@ export function PortalShell({
   children: ReactNode
 }) {
   const access = usePortalAccess(config)
+  const [directSignInError, setDirectSignInError] = useState<string | null>(null)
+  const [isSigningInDirectly, setIsSigningInDirectly] = useState(false)
+
+  async function handleDirectSignIn() {
+    setDirectSignInError(null)
+    setIsSigningInDirectly(true)
+
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      setDirectSignInError(error instanceof Error ? error.message : 'Unable to sign in with Google.')
+    } finally {
+      setIsSigningInDirectly(false)
+    }
+  }
 
   if (access.status === 'loading') {
     return (
@@ -49,10 +65,18 @@ export function PortalShell({
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleDirectSignIn}
+                  disabled={isSigningInDirectly}
+                  className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-[#0b1712] disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: config.primaryColor }}
+                >
+                  {isSigningInDirectly ? 'Opening Google Sign-In...' : 'Sign In to Grounds'}
+                </button>
                 <Link
                   href={access.signInUrl}
-                  className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-[#0b1712]"
-                  style={{ backgroundColor: config.primaryColor }}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-medium text-white/82 hover:bg-white/[0.04]"
                 >
                   Sign In Through BEAM Home
                   <ArrowUpRight className="h-4 w-4" />
@@ -61,6 +85,9 @@ export function PortalShell({
                   Learn about Grounds
                 </Link>
               </div>
+              {directSignInError ? (
+                <p className="text-sm text-red-100">{directSignInError}</p>
+              ) : null}
             </div>
           </div>
         </section>

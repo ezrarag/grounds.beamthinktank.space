@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /beamAssets/{assetId} {
+      allow read: if signedIn() || resource.data.publicVisible == true;
+      allow create, update, delete: if signedIn();
+    }
+
+    match /siteSuggestions/{suggestionId} {
+      allow create: if request.resource.data.name is string
+        && request.resource.data.address is string
+        && request.resource.data.suggestedBy.name is string
+        && request.resource.data.status == 'new';
+      allow read, update, delete: if signedIn();
+    }
+
+    match /{document=**} {
+      allow read, write: if signedIn();
+    }
+  }
+}

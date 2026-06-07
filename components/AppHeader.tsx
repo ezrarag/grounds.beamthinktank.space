@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowUpRight, Leaf, LogIn, MapPinned, Sprout, Users } from 'lucide-react'
+import { ArrowUpRight, KeyRound, Leaf, MapPinned, Sprout, Users } from 'lucide-react'
 import { buildHandoffUrl } from '@/lib/beam-home'
 import type { NGOConfig } from '@/lib/ngoConfig'
 import { cn } from '@/lib/utils'
@@ -8,7 +8,6 @@ const navItems = [
   { href: '/', label: 'Overview' },
   { href: '/about', label: 'About' },
   { href: '/#tracks', label: 'Tracks' },
-  { href: '/portal', label: 'Portal' },
 ]
 
 export function AppHeader({ config, className }: { config: NGOConfig; className?: string }) {
@@ -50,18 +49,19 @@ export function AppHeader({ config, className }: { config: NGOConfig; className?
           </div>
           <Link
             href={buildHandoffUrl(config, { returnPath: config.handoffReturnPath })}
-            className="inline-flex items-center gap-2 rounded-full border border-white/14 px-4 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/[0.04]"
+            aria-label="Sign in"
+            title="Sign in"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 text-white/78 transition hover:border-white/30 hover:bg-white/[0.04] hover:text-white"
           >
-            <LogIn className="h-4 w-4" />
-            Sign In
+            <KeyRound className="h-4 w-4" />
           </Link>
           <Link
             href="/portal"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-[#0b1712] transition hover:brightness-105"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-[#0b1712] transition hover:brightness-105 sm:px-4"
             style={{ backgroundColor: config.primaryColor }}
           >
-            Open Portal
-            <ArrowUpRight className="h-4 w-4" />
+            <span className="hidden sm:inline">Portal</span>
+            <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

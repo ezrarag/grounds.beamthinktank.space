@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -24,4 +24,13 @@ export function subscribeToAuth(callback: (user: User | null) => void) {
   }
 
   return onAuthStateChanged(auth, callback, () => callback(null))
+}
+
+export async function signInWithGoogle() {
+  if (!auth) {
+    throw new Error('Firebase is not configured.')
+  }
+
+  const provider = new GoogleAuthProvider()
+  return signInWithPopup(auth, provider)
 }

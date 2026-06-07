@@ -1,42 +1,78 @@
-import { MapPinned, Pin, Workflow } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { Pin, Workflow } from 'lucide-react'
+import { AcquisitionMap } from '@/components/AcquisitionMap'
+import { PropertyCard } from '@/components/PropertyCard'
 import { PortalShell } from '@/components/PortalShell'
+import { useAcquisitionSites, type BeamAsset, type BeamAssetStage } from '@/lib/useAcquisitionSites'
 import { groundsConfig } from '@/lib/ngoConfig'
 
-const acquisitionStages = ['Intake', 'Screening', 'Diligence', 'Capital planning']
+const acquisitionStages: BeamAssetStage[] = ['SIGNAL', 'CLAIM', 'ACCESS', 'STABILIZE', 'ACTIVATE', 'SECURE', 'TRANSFER']
 
 export default function PortalPropertiesPage() {
+  const { sites, loading, error } = useAcquisitionSites()
+  const [selectedSite, setSelectedSite] = useState<BeamAsset | null>(null)
+  const [selectedStage, setSelectedStage] = useState<BeamAssetStage | null>(null)
+  const filteredSites = selectedStage ? sites.filter((site) => site.acquisitionStage === selectedStage) : sites
+  const selectStage = (stage: BeamAssetStage | null) => {
+    setSelectedStage(stage)
+    setSelectedSite(null)
+  }
+
   return (
     <PortalShell
       config={groundsConfig}
       title="Acquisition pipeline"
-      description="Property sourcing and diligence surface for BEAM Grounds. This page includes a placeholder container for a future Mapbox-backed acquisition map."
+      description="Property sourcing and diligence surface for BEAM Grounds."
     >
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <div className="rounded-[1.75rem] border border-white/10 bg-[#12211c] p-5 shadow-grounds">
-          <div className="flex items-center gap-3">
-            <MapPinned className="h-5 w-5 text-grounds-sand" />
-            <div>
-              <p className="text-sm font-medium text-white">Mapbox container placeholder</p>
-              <p className="text-sm text-white/56">Swap this panel for the live acquisition map when the geospatial layer is ready.</p>
+        <div className="space-y-5">
+          {loading ? (
+            <div className="surface-panel flex min-h-[420px] items-center justify-center p-8 text-sm text-white/64 shadow-grounds">
+              Loading acquisition sites...
             </div>
-          </div>
-          <div
-            data-map-provider="mapbox"
-            className="mt-5 flex h-[360px] items-center justify-center rounded-[1.5rem] border border-dashed border-white/14 bg-[linear-gradient(135deg,rgba(136,170,143,0.16),rgba(11,23,18,0.65))] text-center text-sm text-white/64"
-          >
-            Future Mapbox acquisition surface
-          </div>
+          ) : error ? (
+            <div className="surface-panel border-red-300/25 p-8 text-sm text-red-100 shadow-grounds">
+              {error}
+            </div>
+          ) : (
+            <AcquisitionMap sites={filteredSites} onSelect={setSelectedSite} />
+          )}
+
+          <PropertyCard site={selectedSite} onClose={() => setSelectedSite(null)} />
         </div>
 
         <div className="space-y-4">
           <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-sm font-medium text-white">Pipeline stages</p>
             <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => selectStage(null)}
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                  selectedStage === null
+                    ? 'border-grounds-sand/45 bg-grounds-sand/10 text-grounds-sand'
+                    : 'border-white/10 bg-white/[0.03] text-white/72 hover:border-white/20 hover:bg-white/[0.06]'
+                }`}
+              >
+                <Pin className="h-4 w-4 text-grounds-sand" />
+                All stages
+              </button>
               {acquisitionStages.map((stage) => (
-                <div key={stage} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/72">
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => selectStage(stage)}
+                  className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                    selectedStage === stage
+                      ? 'border-grounds-sand/45 bg-grounds-sand/10 text-grounds-sand'
+                      : 'border-white/10 bg-white/[0.03] text-white/72 hover:border-white/20 hover:bg-white/[0.06]'
+                  }`}
+                >
                   <Pin className="h-4 w-4 text-grounds-sand" />
                   {stage}
-                </div>
+                </button>
               ))}
             </div>
           </div>
