@@ -1,10 +1,5 @@
-import { PortalPageShell } from '@/components/PortalPageShell'
+import { PathwayDashboard } from '@/components/PathwayDashboard'
 
 export default function PortalFinancingPage() {
-  return (
-    <PortalPageShell
-      title="Financing"
-      description="Capital stack planning, funding pathways, and partner diligence workspace for BEAM Grounds."
-    />
-  )
+  return <PathwayDashboard pathwayRole="partner" />
 }

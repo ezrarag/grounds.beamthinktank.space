@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
+import { PortalAccessProvider } from '@/components/PortalAccessProvider'
 import { PortalAuthGuard } from '@/components/PortalAuthGuard'
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
@@ -11,7 +12,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         </div>
       }
     >
-      <PortalAuthGuard>{children}</PortalAuthGuard>
+      <PortalAccessProvider>
+        <PortalAuthGuard>{children}</PortalAuthGuard>
+      </PortalAccessProvider>
     </Suspense>
   )
 }

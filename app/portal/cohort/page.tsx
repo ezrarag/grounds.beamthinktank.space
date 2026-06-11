@@ -1,10 +1,5 @@
-import { PortalPageShell } from '@/components/PortalPageShell'
+import { PathwayDashboard } from '@/components/PathwayDashboard'
 
 export default function PortalCohortPage() {
-  return (
-    <PortalPageShell
-      title="Cohort"
-      description="Redevelopment cohort planning, implementation cadence, and shared participant workspace."
-    />
-  )
+  return <PathwayDashboard pathwayRole="earn" />
 }

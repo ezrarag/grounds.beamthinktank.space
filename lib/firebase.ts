@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,6 +17,7 @@ const isConfigured = Object.values(firebaseConfig).every((value) => Boolean(valu
 export const firebaseApp = isConfigured ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)) : null
 export const auth = firebaseApp ? getAuth(firebaseApp) : null
 export const db = firebaseApp ? getFirestore(firebaseApp) : null
+export const storage = firebaseApp ? getStorage(firebaseApp) : null
 
 export function subscribeToAuth(callback: (user: User | null) => void) {
   if (!auth) {
