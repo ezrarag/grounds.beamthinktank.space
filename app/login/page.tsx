@@ -27,7 +27,7 @@ async function readRole(user: User) {
   return 'community'
 }
 
-async function writeMembership(user: User, role: string) {
+async function writeMembership(user: User, role: string, pathwayRole: string | null, chapter: string | null) {
   if (!db) return
 
   await setDoc(
@@ -37,6 +37,8 @@ async function writeMembership(user: User, role: string) {
       email: user.email ?? null,
       displayName: user.displayName ?? null,
       role,
+      ...(pathwayRole ? { pathwayRole } : {}),
+      ...(chapter ? { chapter } : {}),
       provider: user.providerData[0]?.providerId ?? 'password',
       updatedAt: serverTimestamp(),
     },
@@ -48,6 +50,8 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next')
+  const pathwayRole = searchParams.get('role')
+  const chapter = searchParams.get('chapter')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'sign-in' | 'create'>('sign-in')
@@ -62,8 +66,8 @@ function LoginPageContent() {
 
   async function completeLogin(user: User) {
     const role = await readRole(user)
-    await writeMembership(user, role)
-    router.replace(safeNext ?? resolvePortalPath(role))
+    await writeMembership(user, role, pathwayRole, chapter)
+    router.replace(safeNext ?? resolvePortalPath({ pathwayRole, role }))
   }
 
   useEffect(() => {

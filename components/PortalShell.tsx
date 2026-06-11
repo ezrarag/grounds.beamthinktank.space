@@ -98,7 +98,14 @@ export function PortalShell({
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-10">
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1.6fr]">
-        <MemberDashboard config={config} user={access.user} role={access.role} currentPath={access.currentPath} />
+        <MemberDashboard
+          config={config}
+          user={access.user}
+          role={access.role}
+          pathwayRole={access.pathwayRole}
+          isAdmin={access.isAdmin}
+          currentPath={access.currentPath}
+        />
         <section className="surface-panel p-8 shadow-grounds">
           <div className="flex items-center gap-3 text-grounds-sand">
             <ShieldCheck className="h-5 w-5" />

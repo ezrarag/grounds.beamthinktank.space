@@ -2,32 +2,92 @@
 
 import Link from 'next/link'
 import { type User } from 'firebase/auth'
-import { ArrowRight, Building2, LayoutDashboard, MapPinned, Users } from 'lucide-react'
+import {
+  ArrowRight,
+  Building2,
+  Compass,
+  Handshake,
+  Hammer,
+  Home,
+  LayoutDashboard,
+  MapPinned,
+  Megaphone,
+  Scale,
+  Settings2,
+  type LucideIcon,
+} from 'lucide-react'
 import { resolvePortalPath } from '@/lib/resolvePortalPath'
-import type { NGOConfig } from '@/lib/ngoConfig'
+import { PATHWAY_META } from '@/lib/pathwayDashboards'
+import type { NGOConfig, PathwayRole } from '@/lib/ngoConfig'
 import { cn } from '@/lib/utils'
 
-const portalLinks = [
-  { href: '/portal/dashboard', label: 'Role Router', icon: LayoutDashboard },
-  { href: '/portal/properties', label: 'Acquisition Map', icon: MapPinned },
-  { href: '/portal/cohort', label: 'Cohort Hub', icon: Users },
+const NAV_ICONS: Record<string, LucideIcon> = {
+  home: Home,
+  hammer: Hammer,
+  megaphone: Megaphone,
+  handshake: Handshake,
+  scale: Scale,
+}
+
+type NavLink = { href: string; label: string; icon: LucideIcon }
+
+const PATHWAY_NAV_ORDER: PathwayRole[] = ['learn', 'earn', 'teach', 'partner', 'own']
+
+/** Shared links every authenticated member sees alongside their workspace. */
+const SHARED_LINKS: NavLink[] = [{ href: '/portal/properties', label: 'Acquisition Map', icon: MapPinned }]
+
+/** Admin-only links (the "see everything" permission level). */
+const ADMIN_LINKS: NavLink[] = [
+  { href: '/portal/acquisition', label: 'Acquisition Overview', icon: LayoutDashboard },
+  { href: '/portal/admin', label: 'Site Admin', icon: Settings2 },
 ]
+
+function pathwayNavLink(pathwayRole: PathwayRole): NavLink {
+  const meta = PATHWAY_META[pathwayRole]
+  return { href: meta.route, label: meta.navLabel, icon: NAV_ICONS[meta.icon] ?? Home }
+}
+
+function buildNavLinks(pathwayRole: PathwayRole | null, isAdmin: boolean): NavLink[] {
+  if (isAdmin) {
+    return [
+      ...PATHWAY_NAV_ORDER.map(pathwayNavLink),
+      ...SHARED_LINKS,
+      ...ADMIN_LINKS,
+    ]
+  }
+
+  if (pathwayRole) {
+    return [pathwayNavLink(pathwayRole), ...SHARED_LINKS]
+  }
+
+  // No pathway yet — point at the entry interstitial.
+  return [{ href: '/portal/dashboard', label: 'Choose your entry point', icon: Compass }, ...SHARED_LINKS]
+}
 
 export function MemberDashboard({
   config,
   user,
   role,
+  pathwayRole = null,
+  isAdmin = false,
   currentPath,
   className,
 }: {
   config: NGOConfig
   user: User
   role: string
+  pathwayRole?: PathwayRole | null
+  isAdmin?: boolean
   currentPath: string
   className?: string
 }) {
-  const recommendedPath = resolvePortalPath(role)
+  const recommendedPath = resolvePortalPath({ pathwayRole, role })
   const displayName = user.displayName || user.email || 'BEAM participant'
+  const navLinks = buildNavLinks(pathwayRole, isAdmin)
+
+  const roleContext = pathwayRole
+    ? `${PATHWAY_META[pathwayRole].navLabel.toLowerCase()} pathway`
+    : `${role} role context`
 
   return (
     <section className={cn('surface-panel p-6 shadow-grounds', className)}>
@@ -37,7 +97,8 @@ export function MemberDashboard({
           <div>
             <h2 className="text-2xl font-semibold text-white">{displayName}</h2>
             <p className="mt-2 text-sm text-white/68">
-              Signed into {config.name} with the <span className="text-white">{role}</span> role context.
+              Signed into {config.name} on your <span className="text-white">{roleContext}</span>
+              {isAdmin ? <span className="text-white"> · admin access</span> : null}.
             </p>
           </div>
           <div className="grid gap-3 text-sm text-white/70 sm:grid-cols-2">
@@ -58,12 +119,12 @@ export function MemberDashboard({
               <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-white/56">Recommended route</p>
+              <p className="text-sm text-white/56">Your workspace</p>
               <p className="font-medium">{recommendedPath}</p>
             </div>
           </div>
           <p className="mt-4 text-sm leading-7 text-white/66">
-            Grounds uses a shared NGO portal contract. The role resolver keeps cohort, acquisition, and operator traffic on the correct surface.
+            Grounds routes on your self-sorted pathway; admins keep a full view and can preview any pathway dashboard.
           </p>
           <a href={config.beamHomeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-grounds-sand">
             Return to BEAM Home
@@ -72,8 +133,8 @@ export function MemberDashboard({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 md:grid-cols-3">
-        {portalLinks.map(({ href, label, icon: Icon }) => {
+      <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {navLinks.map(({ href, label, icon: Icon }) => {
           const isActive = currentPath === href
 
           return (
