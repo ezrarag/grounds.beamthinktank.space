@@ -4,17 +4,20 @@ import { useState } from 'react'
 import { AcquisitionMap } from '@/components/AcquisitionMap'
 import { AcquisitionSiteList } from '@/components/AcquisitionSiteList'
 import { AddPropertyForm } from '@/components/AddPropertyForm'
+import { CivicScanImport } from '@/components/CivicScanImport'
 import { CKANImport } from '@/components/CKANImport'
 import { NGOLinkManager } from '@/components/NGOLinkManager'
 import { PropertyCard } from '@/components/PropertyCard'
 import { ProjectionPanel } from '@/components/ProjectionPanel'
 import { PublicSitePublishingControls } from '@/components/PublicSitePublishingControls'
 import { PortalPageShell } from '@/components/PortalPageShell'
+import { useIsAdmin } from '@/lib/useIsAdmin'
 import { useAcquisitionSites, type BeamAsset } from '@/lib/useAcquisitionSites'
 
 export default function PortalAcquisitionPage() {
   const { sites, loading, error } = useAcquisitionSites()
   const [selectedSite, setSelectedSite] = useState<BeamAsset | null>(null)
+  const { isAdmin, ready: adminReady } = useIsAdmin()
 
   return (
     <PortalPageShell
@@ -38,10 +41,20 @@ export default function PortalAcquisitionPage() {
 
         <div className="space-y-5">
           <AcquisitionSiteList sites={sites} selectedSite={selectedSite} onSelect={setSelectedSite} />
-          <PublicSitePublishingControls site={selectedSite} />
-          <NGOLinkManager site={selectedSite} />
-          <AddPropertyForm />
-          <CKANImport />
+          {!adminReady ? null : isAdmin ? (
+            <>
+              <PublicSitePublishingControls site={selectedSite} />
+              <NGOLinkManager site={selectedSite} />
+              <AddPropertyForm />
+              <CivicScanImport />
+              <CKANImport />
+            </>
+          ) : (
+            <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-white/60">
+              Property editing, civic-record scanning, and publishing are limited to BEAM Grounds admins. Sign in with
+              an authorized admin account to manage properties.
+            </section>
+          )}
         </div>
       </div>
     </PortalPageShell>

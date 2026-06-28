@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { CITIES, getCity } from '@/lib/cities'
 import type { BeamAssetStage } from '@/lib/useAcquisitionSites'
 
 type AssetCondition = 'unknown' | 'poor' | 'fair' | 'good' | 'excellent'
@@ -72,7 +73,7 @@ export function AddPropertyForm() {
   const [address, setAddress] = useState('')
   const [lat, setLat] = useState<number | undefined>()
   const [lng, setLng] = useState<number | undefined>()
-  const [regionId, setRegionId] = useState('milwaukee-wi')
+  const [regionId, setRegionId] = useState(CITIES[0]?.id ?? 'milwaukee-wi')
   const [ownerName, setOwnerName] = useState('')
   const [acquisitionStage, setAcquisitionStage] = useState<BeamAssetStage>('SIGNAL')
   const [condition, setCondition] = useState<AssetCondition>('unknown')
@@ -80,6 +81,9 @@ export function AddPropertyForm() {
   const [stewardshipStatus, setStewardshipStatus] = useState<StewardshipStatus>('unmonitored')
   const [operatorNarrative, setOperatorNarrative] = useState('')
   const [primaryUseCases, setPrimaryUseCases] = useState('')
+  const [publishPublic, setPublishPublic] = useState(false)
+  const [publicTitle, setPublicTitle] = useState('')
+  const [publicSummary, setPublicSummary] = useState('')
   const [linkedProjectIds, setLinkedProjectIds] = useState('')
   const [scores, setScores] = useState(initialScores)
   const [isFinanceOpen, setIsFinanceOpen] = useState(false)
@@ -132,7 +136,7 @@ export function AddPropertyForm() {
     setAddress('')
     setLat(undefined)
     setLng(undefined)
-    setRegionId('milwaukee-wi')
+    setRegionId(CITIES[0]?.id ?? 'milwaukee-wi')
     setOwnerName('')
     setAcquisitionStage('SIGNAL')
     setCondition('unknown')
@@ -140,6 +144,9 @@ export function AddPropertyForm() {
     setStewardshipStatus('unmonitored')
     setOperatorNarrative('')
     setPrimaryUseCases('')
+    setPublishPublic(false)
+    setPublicTitle('')
+    setPublicSummary('')
     setLinkedProjectIds('')
     setScores(initialScores)
     setIsFinanceOpen(false)
@@ -192,6 +199,7 @@ export function AddPropertyForm() {
         ...(lat !== undefined ? { lat } : {}),
         ...(lng !== undefined ? { lng } : {}),
         regionId: regionId.trim(),
+        city: getCity(regionId)?.label ?? regionId.trim(),
         ownerName: ownerName.trim(),
         acquisitionStage,
         condition,
@@ -199,6 +207,14 @@ export function AddPropertyForm() {
         stewardshipStatus,
         operatorNarrative: operatorNarrative.trim(),
         primaryUseCases: parseCommaList(primaryUseCases),
+        publicVisible: publishPublic,
+        ...(publishPublic
+          ? {
+              publicTitle: (publicTitle.trim() || trimmedName),
+              publicSummary: (publicSummary.trim() || operatorNarrative.trim()),
+              publicNarrative: (publicSummary.trim() || operatorNarrative.trim()),
+            }
+          : {}),
         scores,
         stageHistory: [{ stage: acquisitionStage, timestamp: now, note: 'Initial entry' }],
         linkedProjectIds: parseCommaList(linkedProjectIds),
@@ -268,13 +284,19 @@ export function AddPropertyForm() {
           </label>
 
           <label className="block text-sm text-white/70">
-            Region ID
-            <input
+            City
+            <select
               value={regionId}
               onChange={(event) => setRegionId(event.target.value)}
               required
               className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
-            />
+            >
+              {CITIES.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.label}, {city.state}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -365,6 +387,45 @@ export function AddPropertyForm() {
             className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
           />
         </label>
+
+        <div className="rounded-[1.25rem] border border-white/10 bg-[#12211c] p-4">
+          <label className="flex items-center gap-3 text-sm font-medium text-white">
+            <input
+              type="checkbox"
+              checked={publishPublic}
+              onChange={(event) => setPublishPublic(event.target.checked)}
+              className="h-4 w-4 accent-grounds-sand"
+            />
+            Publish to public /properties now
+          </label>
+          <p className="mt-2 text-xs leading-6 text-white/50">
+            When on, this property appears on the public Properties page immediately.
+          </p>
+
+          {publishPublic ? (
+            <div className="mt-4 grid gap-3">
+              <label className="block text-sm text-white/70">
+                Public title
+                <input
+                  value={publicTitle}
+                  onChange={(event) => setPublicTitle(event.target.value)}
+                  placeholder="Defaults to the property name"
+                  className="mt-1 w-full rounded-2xl border border-white/10 bg-[#0b1712] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
+                />
+              </label>
+              <label className="block text-sm text-white/70">
+                Public summary
+                <textarea
+                  value={publicSummary}
+                  onChange={(event) => setPublicSummary(event.target.value)}
+                  rows={3}
+                  placeholder="Short public-facing narrative"
+                  className="mt-1 w-full rounded-2xl border border-white/10 bg-[#0b1712] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
+                />
+              </label>
+            </div>
+          ) : null}
+        </div>
 
         <div className="rounded-[1.25rem] border border-white/10 bg-[#12211c] p-4">
           <p className="text-sm font-medium text-white">Scores</p>

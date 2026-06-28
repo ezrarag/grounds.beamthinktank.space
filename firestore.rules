@@ -6,21 +6,36 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    match /beamAssets/{assetId} {
-      allow read: if signedIn() || resource.data.publicVisible == true;
-      allow create, update, delete: if signedIn();
+    // Admin allowlist — keep in sync with NEXT_PUBLIC_ADMIN_EMAILS / lib/adminAccess.ts.
+    function isAdmin() {
+      return signedIn() && request.auth.token.email in ['ezra@beamthink.institute'];
     }
 
+    // Properties: anyone can read public ones; only admins can write.
+    match /beamAssets/{assetId} {
+      allow read: if signedIn() || resource.data.publicVisible == true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Public site suggestions: anyone may submit; only admins can read/manage.
     match /siteSuggestions/{suggestionId} {
       allow create: if request.resource.data.name is string
         && request.resource.data.address is string
         && request.resource.data.suggestedBy.name is string
         && request.resource.data.status == 'new';
-      allow read, update, delete: if signedIn();
+      allow read, update, delete: if isAdmin();
     }
 
+    // Members may read memberships and write only their own.
+    match /memberships/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Everything else (site/pathway config, etc.): signed-in read, admin-only write.
     match /{document=**} {
-      allow read, write: if signedIn();
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
   }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { cityLabel } from '@/lib/cities'
 import { cn } from '@/lib/utils'
 
 interface PropertyGalleryFiltersProps {
@@ -21,11 +22,13 @@ function FilterRow({
   options,
   active,
   onChange,
+  format = labelFor,
 }: {
   label: string
   options: string[]
   active: string
   onChange: (value: string) => void
+  format?: (value: string) => string
 }) {
   return (
     <div>
@@ -46,7 +49,7 @@ function FilterRow({
                   : 'border-white/15 text-white/60 hover:border-white/30 hover:text-white/80',
               )}
             >
-              {labelFor(option)}
+              {option === 'all' ? 'All' : format(option)}
             </button>
           )
         })}
@@ -65,7 +68,7 @@ export function PropertyGalleryFilters({
 }: PropertyGalleryFiltersProps) {
   return (
     <div className="space-y-3 rounded-[16px] border border-white/10 bg-white/[0.03] p-4">
-      <FilterRow label="Node" options={nodes} active={activeNode} onChange={onNodeChange} />
+      <FilterRow label="Node" options={nodes} active={activeNode} onChange={onNodeChange} format={cityLabel} />
       <FilterRow label="Class" options={classes} active={activeClass} onChange={onClassChange} />
     </div>
   )

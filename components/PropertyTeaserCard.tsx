@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { BeamAsset, BeamAssetStage } from '@/lib/useAcquisitionSites'
+import { cityLabel } from '@/lib/cities'
 import { cn } from '@/lib/utils'
 
 const STAGE_BADGE: Record<BeamAssetStage, string> = {
@@ -68,7 +69,7 @@ function formatSeeded(createdAt?: string) {
 
 function nodeLabel(regionId?: string) {
   if (!regionId) return 'UNNODED'
-  return regionId.split('-')[0]!.toUpperCase()
+  return (cityLabel(regionId) || regionId).toUpperCase()
 }
 
 function classLabel(locationType?: string) {

@@ -57,6 +57,8 @@ export interface BeamAsset {
     linkedAt: string
   }>
   cohortPool?: 'acquisition' | 'financing' | 'cohort' | 'civic' | 'all'
+  // Friendly city label (regionId is the canonical city id). See lib/cities.ts.
+  city?: string
   // Public-facing display overrides (fall back to name / publicNarrative).
   publicTitle?: string
   publicSummary?: string
