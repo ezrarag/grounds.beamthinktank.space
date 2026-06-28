@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { GroundsSiteCard } from '@/components/GroundsSiteCard'
 import { PropertyGalleryFilters } from '@/components/PropertyGalleryFilters'
+import { PropertyTeaserCard } from '@/components/PropertyTeaserCard'
 import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
 
 export default function PropertiesPage() {
@@ -51,7 +51,7 @@ export default function PropertiesPage() {
       ) : filtered.length > 0 ? (
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
           {filtered.map((site) => (
-            <GroundsSiteCard key={site.id} site={site} />
+            <PropertyTeaserCard key={site.id} site={site} />
           ))}
         </div>
       ) : (
