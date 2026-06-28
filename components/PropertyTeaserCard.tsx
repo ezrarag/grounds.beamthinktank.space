@@ -126,7 +126,7 @@ const TABS: TabDef[] = [
   { id: 'stewardship', label: 'Stewardship', icon: ShieldCheck },
 ]
 
-export function GroundsSiteCard({ site }: { site: BeamAsset }) {
+export function PropertyTeaserCard({ site }: { site: BeamAsset }) {
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<string>('tenancy')
 
