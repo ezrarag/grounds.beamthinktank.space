@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, type PointerEvent } from 'react'
+import { useCallback, useEffect, useState, type PointerEvent } from 'react'
 import {
   CalendarClock,
   ChevronLeft,
@@ -18,6 +18,33 @@ import { propertyViewports, type PropertyViewport } from '@/lib/propertyViewport
 import { cn } from '@/lib/utils'
 
 const MAX_TILT = 9 // degrees
+
+// <model-viewer> is a standalone web component loaded on demand (only when a
+// property actually has a 3D model), so it never weighs down the base bundle.
+const MODEL_VIEWER_SRC =
+  'https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js'
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'model-viewer': Record<string, unknown>
+    }
+  }
+}
+
+function useModelViewer(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') return
+    if (window.customElements?.get('model-viewer')) return
+    if (document.querySelector(`script[data-model-viewer]`)) return
+
+    const script = document.createElement('script')
+    script.type = 'module'
+    script.src = MODEL_VIEWER_SRC
+    script.dataset.modelViewer = 'true'
+    document.head.appendChild(script)
+  }, [enabled])
+}
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/)
@@ -96,6 +123,8 @@ export function PropertyViewportCard({
 
   const property = properties[index]
   const hasMany = properties.length > 1
+  // When a 3D model is shown it owns pointer drag/zoom, so skip the card tilt.
+  const tiltEnabled = !property?.modelUrl
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -116,8 +145,8 @@ export function PropertyViewportCard({
   return (
     <div className={cn('group/card flex w-full flex-1 flex-col [perspective:1400px]', className)}>
       <div
-        onPointerMove={handlePointerMove}
-        onPointerLeave={resetTilt}
+        onPointerMove={tiltEnabled ? handlePointerMove : undefined}
+        onPointerLeave={tiltEnabled ? resetTilt : undefined}
         className="flex flex-1 animate-grounds-float"
       >
         <div
@@ -290,12 +319,30 @@ export function PropertyViewportCard({
 
 function PropertyVisual({ property }: { property: PropertyViewport }) {
   const [failed, setFailed] = useState(false)
+  const hasModel = Boolean(property.modelUrl)
+  useModelViewer(hasModel)
 
   return (
     <>
-      {/* Gradient fallback — also the canvas a future 3D model would sit on. */}
+      {/* Gradient fallback — also the canvas the 3D model sits on. */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,#3d6c57_0%,#16322b_45%,#0b1712_100%)]" />
-      {property.imageUrl && !failed ? (
+
+      {hasModel ? (
+        // Interactive, auto-rotating 3D model. Spin/zoom with pointer or touch.
+        <model-viewer
+          src={property.modelUrl}
+          alt={`3D model of ${property.name}`}
+          camera-controls=""
+          auto-rotate=""
+          rotation-per-second="18deg"
+          interaction-prompt="none"
+          shadow-intensity="1"
+          exposure="1"
+          environment-image="neutral"
+          className="absolute inset-0 h-full w-full"
+          style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+        />
+      ) : property.imageUrl && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={property.imageUrl}

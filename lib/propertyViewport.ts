@@ -67,9 +67,15 @@ export interface PropertyViewport {
   earnTracks: PropertyEarnTrack[]
 
   /**
-   * Background visual. Today this is a static image; the component is built so
-   * this can later be swapped for a 3D model (glTF / model-viewer / R3F) without
-   * changing the surrounding card. A gradient fallback renders if it fails.
+   * Optional 3D model (glTF/GLB). When set, the card renders an interactive,
+   * auto-rotating <model-viewer> the visitor can spin and zoom. Falls back to
+   * `imageUrl`, then to a gradient, when absent or it fails to load.
+   */
+  modelUrl?: string
+
+  /**
+   * Background visual used when there is no 3D model. A gradient fallback
+   * renders if the image itself fails to load.
    */
   imageUrl?: string
 }
