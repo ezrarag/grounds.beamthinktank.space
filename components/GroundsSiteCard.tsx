@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Clock,
   Coins,
+  ExternalLink,
   Landmark,
   Lightbulb,
   Plus,
@@ -18,8 +19,26 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
-import type { BeamAsset } from '@/lib/useAcquisitionSites'
+import type { BeamAsset, BeamAssetStage } from '@/lib/useAcquisitionSites'
 import { cn } from '@/lib/utils'
+
+const STAGE_BADGE: Record<BeamAssetStage, string> = {
+  SIGNAL: 'border-white/20 text-white/50',
+  CLAIM: 'border-[#c8b97a]/40 text-[#c8b97a]',
+  ACCESS: 'border-[#88aa8f]/40 text-[#88aa8f]',
+  STABILIZE: 'border-blue-400/40 text-blue-400',
+  ACTIVATE: 'border-emerald-400/40 text-emerald-400',
+  SECURE: 'border-purple-400/40 text-purple-400',
+  TRANSFER: 'border-rose-400/40 text-rose-400',
+}
+
+function hostnameOf(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')
+  }
+}
 
 // Maps an NGO id to the kind of paid/credit work available at a site.
 const EARN_LABELS: Array<[RegExp, string]> = [
@@ -126,9 +145,19 @@ export function GroundsSiteCard({ site }: { site: BeamAsset }) {
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-beam-gold">
           {classLabel(site.locationType)} · {nodeLabel(site.regionId)}
         </p>
-        {seeded ? (
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">Seeded {seeded}</p>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {seeded ? (
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">Seeded {seeded}</p>
+          ) : null}
+          <span
+            className={cn(
+              'rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]',
+              STAGE_BADGE[site.acquisitionStage] ?? STAGE_BADGE.SIGNAL,
+            )}
+          >
+            {site.acquisitionStage}
+          </span>
+        </div>
       </div>
 
       {/* 2. Property name */}
@@ -282,19 +311,38 @@ function TenancyPanel({ site }: { site: BeamAsset }) {
     <div>
       {tenants.length > 0 ? (
         <ul className="space-y-2">
-          {tenants.map((tenant) => (
-            <li key={`${tenant.name}-${tenant.status}`} className="rounded-[12px] bg-white/5 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-white">{tenant.name}</p>
-                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/40">
-                  {tenant.status}
-                </span>
-              </div>
-              {tenant.category ? (
-                <p className="mt-1 font-dm text-xs text-white/55">{tenant.category}</p>
-              ) : null}
-            </li>
-          ))}
+          {tenants.map((tenant) => {
+            const isCurrent = tenant.status === 'current'
+            return (
+              <li key={`${tenant.name}-${tenant.status}`} className="rounded-[12px] bg-white/5 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-white">{tenant.name}</p>
+                  {tenant.category ? (
+                    <span className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/50">
+                      {tenant.category}
+                    </span>
+                  ) : null}
+                  <span className={cn('text-xs', isCurrent ? 'text-emerald-400/60' : 'text-white/30')}>
+                    ● {isCurrent ? 'Current' : 'Former'}
+                  </span>
+                </div>
+                {tenant.websiteUrl ? (
+                  <a
+                    href={tenant.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1.5 inline-flex items-center gap-1 font-dm text-xs text-[#88aa8f] hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    {hostnameOf(tenant.websiteUrl)}
+                  </a>
+                ) : null}
+                {tenant.notes ? (
+                  <p className="mt-1 font-dm text-xs text-white/50">{tenant.notes}</p>
+                ) : null}
+              </li>
+            )
+          })}
         </ul>
       ) : (
         <EmptyNote>Occupant records coming soon. Sign in to add known tenants.</EmptyNote>
