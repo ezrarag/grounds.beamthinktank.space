@@ -36,3 +36,26 @@ body {
 .eyebrow {
   @apply text-xs uppercase tracking-[0.28em] text-grounds-sand;
 }
+
+/* Gentle idle bob for the property viewport card — gives the 3D card a
+   "showcase" feel even before a real model is wired in. The interactive tilt
+   lives on a separate inner element so the two transforms never collide. */
+@keyframes grounds-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-grounds-float {
+  animation: grounds-float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-grounds-float {
+    animation: none;
+  }
+}

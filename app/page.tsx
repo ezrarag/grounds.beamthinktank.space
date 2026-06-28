@@ -1,9 +1,9 @@
-import { HomePathways } from '@/components/HomePathways'
+import { PropertyViewportCard } from '@/components/PropertyViewportCard'
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-10">
-      <HomePathways />
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <PropertyViewportCard />
     </div>
   )
 }
