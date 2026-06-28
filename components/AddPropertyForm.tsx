@@ -8,10 +8,35 @@ import type { BeamAssetStage } from '@/lib/useAcquisitionSites'
 
 type AssetCondition = 'unknown' | 'poor' | 'fair' | 'good' | 'excellent'
 type PlanType = 'lease' | 'purchase' | 'bond-financing' | 'grant' | 'revenue-share' | 'management-agreement'
+type LocationType =
+  | 'venue'
+  | 'rehearsal-space'
+  | 'performance-venue'
+  | 'project-site'
+  | 'office'
+  | 'civic-anchor'
+  | 'field-site'
+  | 'property'
+  | 'parking'
+  | 'other'
+type StewardshipStatus = 'unmonitored' | 'observed' | 'stewarded' | 'activated'
 
 const stages: BeamAssetStage[] = ['SIGNAL', 'CLAIM', 'ACCESS', 'STABILIZE', 'ACTIVATE', 'SECURE', 'TRANSFER']
 const conditions: AssetCondition[] = ['unknown', 'poor', 'fair', 'good', 'excellent']
 const planTypes: PlanType[] = ['lease', 'purchase', 'bond-financing', 'grant', 'revenue-share', 'management-agreement']
+const locationTypes: LocationType[] = [
+  'venue',
+  'rehearsal-space',
+  'performance-venue',
+  'project-site',
+  'office',
+  'civic-anchor',
+  'field-site',
+  'property',
+  'parking',
+  'other',
+]
+const stewardshipStatuses: StewardshipStatus[] = ['unmonitored', 'observed', 'stewarded', 'activated']
 
 const initialScores = {
   capacity: 0,
@@ -51,6 +76,8 @@ export function AddPropertyForm() {
   const [ownerName, setOwnerName] = useState('')
   const [acquisitionStage, setAcquisitionStage] = useState<BeamAssetStage>('SIGNAL')
   const [condition, setCondition] = useState<AssetCondition>('unknown')
+  const [locationType, setLocationType] = useState<LocationType>('civic-anchor')
+  const [stewardshipStatus, setStewardshipStatus] = useState<StewardshipStatus>('unmonitored')
   const [operatorNarrative, setOperatorNarrative] = useState('')
   const [primaryUseCases, setPrimaryUseCases] = useState('')
   const [linkedProjectIds, setLinkedProjectIds] = useState('')
@@ -109,6 +136,8 @@ export function AddPropertyForm() {
     setOwnerName('')
     setAcquisitionStage('SIGNAL')
     setCondition('unknown')
+    setLocationType('civic-anchor')
+    setStewardshipStatus('unmonitored')
     setOperatorNarrative('')
     setPrimaryUseCases('')
     setLinkedProjectIds('')
@@ -166,6 +195,8 @@ export function AddPropertyForm() {
         ownerName: ownerName.trim(),
         acquisitionStage,
         condition,
+        locationType,
+        stewardshipStatus,
         operatorNarrative: operatorNarrative.trim(),
         primaryUseCases: parseCommaList(primaryUseCases),
         scores,
@@ -265,6 +296,38 @@ export function AddPropertyForm() {
               className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
             >
               {conditions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm text-white/70">
+            Location type
+            <select
+              value={locationType}
+              onChange={(event) => setLocationType(event.target.value as LocationType)}
+              className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
+            >
+              {locationTypes.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm text-white/70">
+            Stewardship status
+            <select
+              value={stewardshipStatus}
+              onChange={(event) => setStewardshipStatus(event.target.value as StewardshipStatus)}
+              className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
+            >
+              {stewardshipStatuses.map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
