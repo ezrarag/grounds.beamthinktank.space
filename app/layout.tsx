@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Space_Grotesk } from 'next/font/google'
 import { AppHeader } from '@/components/AppHeader'
 import { AuthBootstrapper } from '@/components/AuthBootstrapper'
-import { SiteFooter } from '@/components/SiteFooter'
+import { ConditionalFooter } from '@/components/ConditionalFooter'
 import { groundsConfig } from '@/lib/ngoConfig'
 import './globals.css'
 
@@ -36,11 +36,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="en" className={spaceGrotesk.variable}>
       <body className="min-h-screen bg-[#07100c] text-white antialiased">
         <AuthBootstrapper />
-        <div className="relative min-h-screen overflow-hidden">
+        <div className="relative flex min-h-screen flex-col overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-grounds-grid bg-[size:40px_40px] opacity-[0.05]" />
           <AppHeader config={groundsConfig} />
-          <main className="relative z-10">{children}</main>
-          <SiteFooter config={groundsConfig} />
+          <main className="relative z-10 flex flex-1 flex-col">{children}</main>
+          <ConditionalFooter />
         </div>
       </body>
     </html>
