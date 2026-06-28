@@ -17,6 +17,14 @@ module.exports = {
           mist: '#edf3ea',
           line: 'rgba(237,243,234,0.14)',
         },
+        beam: {
+          gold: '#c8b97a',
+        },
+      },
+      fontFamily: {
+        display: ['var(--font-playfair)', 'Georgia', 'serif'],
+        mono: ['var(--font-dm-mono)', 'ui-monospace', 'monospace'],
+        dm: ['var(--font-dm-sans)', 'ui-sans-serif', 'sans-serif'],
       },
       boxShadow: {
         grounds: '0 28px 90px rgba(8, 17, 13, 0.28)',

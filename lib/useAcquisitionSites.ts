@@ -57,6 +57,53 @@ export interface BeamAsset {
     linkedAt: string
   }>
   cohortPool?: 'acquisition' | 'financing' | 'cohort' | 'civic' | 'all'
+  // Public-facing display overrides (fall back to name / publicNarrative).
+  publicTitle?: string
+  publicSummary?: string
+  // Civic intelligence fields surfaced on the public GroundsSiteCard.
+  locationType?:
+    | 'venue'
+    | 'rehearsal-space'
+    | 'performance-venue'
+    | 'project-site'
+    | 'office'
+    | 'civic-anchor'
+    | 'field-site'
+    | 'property'
+    | 'parking'
+    | 'other'
+  stewardshipStatus?: 'unmonitored' | 'observed' | 'stewarded' | 'activated'
+  civicLiabilities?: Array<{
+    type: string
+    description: string
+    reportedAt: string
+    reportedBy: string
+    beamResponseStatus: 'noted' | 'engaged' | 'resolved'
+  }>
+  workLog?: Array<{
+    workType: string
+    note: string
+    mediaUrls: string[]
+    civicImplication: string
+    loggedBy: string
+    loggedAt: string
+    lat: number
+    lng: number
+  }>
+  tenants?: Array<{
+    name: string
+    category: string
+    status: 'current' | 'historical'
+    websiteUrl: string
+    notes: string
+  }>
+  parcelPermits?: string[]
+  // Optional CKAN-sourced parcel intel (populated by lookup).
+  ckanOwnerName?: string
+  ckanAssessedValue?: string | number
+  ckanZoning?: string
+  ckanTaxStatus?: string
+  ckanParcelId?: string
   financePlan?: {
     planType: string
     estimatedCost?: number
