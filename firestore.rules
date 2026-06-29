@@ -48,6 +48,16 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    match /redevelopmentProjects/{projectId} {
+      allow read: if resource.data.isPublished == true;
+      allow write: if signedIn();
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if signedIn();
+      }
+    }
+
     // Everything else (site/pathway config, etc.): signed-in read, admin-only write.
     match /{document=**} {
       allow read: if signedIn();

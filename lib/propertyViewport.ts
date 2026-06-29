@@ -34,6 +34,7 @@ export interface PropertyViewport {
   id: string
   name: string
   address: string
+  detailHref?: string
 
   /** Where this property came from. External = seeded by a partner feed. */
   source: PropertySource
@@ -85,6 +86,7 @@ export const propertyViewports: PropertyViewport[] = [
     id: 'central-united-methodist-church',
     name: 'Central United Methodist Church',
     address: '639 N 25th St · Milwaukee, WI',
+    detailHref: '/properties/central-united-methodist-church',
     source: 'external',
     sourceLabel: 'Ready Aim Go',
     sourceHref: '#',

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState, type PointerEvent } from 'react'
 import {
   CalendarClock,
@@ -173,13 +174,27 @@ export function PropertyViewportCard({
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/85 backdrop-blur-md">
                 {property.status}
               </span>
-              <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-sm sm:text-4xl lg:text-5xl">
-                {property.name}
-              </h1>
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
-                <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {property.address}
-              </p>
+              {property.detailHref ? (
+                <Link href={property.detailHref} className="pointer-events-auto block">
+                  <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-sm transition hover:text-grounds-sand sm:text-4xl lg:text-5xl">
+                    {property.name}
+                  </h1>
+                  <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
+                    <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {property.address}
+                  </p>
+                </Link>
+              ) : (
+                <>
+                  <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-sm sm:text-4xl lg:text-5xl">
+                    {property.name}
+                  </h1>
+                  <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
+                    <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {property.address}
+                  </p>
+                </>
+              )}
             </div>
 
             {hasMany ? (
@@ -205,7 +220,10 @@ export function PropertyViewportCard({
           </div>
 
           {/* Info panel */}
-          <div className="bg-grounds-mist px-5 py-5 text-[#10231b] sm:px-8 sm:py-6">
+          <div
+            className="-mt-10 bg-grounds-mist px-5 pb-6 pt-14 text-[#10231b] sm:px-8 sm:pb-7 sm:pt-16"
+            style={{ clipPath: 'polygon(0 10%, 100% 0, 100% 100%, 0 100%)' }}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-grounds-moss">
                 {property.category}
@@ -213,9 +231,15 @@ export function PropertyViewportCard({
               <p className="text-xs font-medium text-[#10231b]/55">{property.dateLabel}</p>
             </div>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-[#10231b]/80 sm:text-base">
-              {property.subtitle}
-            </p>
+            {property.detailHref ? (
+              <Link href={property.detailHref} className="block transition hover:text-grounds-moss">
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-[#10231b]/80 sm:text-base">{property.subtitle}</p>
+              </Link>
+            ) : (
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-[#10231b]/80 sm:text-base">
+                {property.subtitle}
+              </p>
+            )}
 
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
               {/* Potential uses + submit idea + NGO relations */}
@@ -292,6 +316,18 @@ export function PropertyViewportCard({
                 </div>
               </div>
             </div>
+
+            {property.detailHref ? (
+              <div className="mt-6">
+                <Link
+                  href={property.detailHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-grounds-moss/30 bg-white/65 px-4 py-2 text-sm font-semibold text-grounds-moss transition hover:border-grounds-moss/55 hover:bg-white/90"
+                >
+                  Open property page
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
