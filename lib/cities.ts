@@ -73,6 +73,61 @@ export const CITIES: CityConfig[] = [
       },
     },
   },
+  {
+    id: 'new-york-ny',
+    label: 'New York',
+    state: 'NY',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.cityofnewyork.us',
+      resourceEnv: 'CIVIC_NEW_YORK_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'chicago-il',
+    label: 'Chicago',
+    state: 'IL',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.cityofchicago.org',
+      resourceEnv: 'CIVIC_CHICAGO_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'los-angeles-ca',
+    label: 'Los Angeles',
+    state: 'CA',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.lacity.org',
+      resourceEnv: 'CIVIC_LOS_ANGELES_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'san-francisco-ca',
+    label: 'San Francisco',
+    state: 'CA',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.sfgov.org',
+      resourceEnv: 'CIVIC_SAN_FRANCISCO_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'seattle-wa',
+    label: 'Seattle',
+    state: 'WA',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.seattle.gov',
+      resourceEnv: 'CIVIC_SEATTLE_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
 ]
 
 export function getCity(id?: string | null): CityConfig | undefined {

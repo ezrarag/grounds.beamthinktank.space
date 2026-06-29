@@ -1,9 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react'
 import Link from 'next/link'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { showcaseProperties, type ShowcaseProperty } from '@/lib/landingShowcase'
+import { cityLabel } from '@/lib/cities'
+import { heroImage } from '@/lib/media'
+import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
 import { cn } from '@/lib/utils'
 
 const SWIPE_THRESHOLD = 40
@@ -12,17 +15,36 @@ function pad(n: number) {
   return String(n + 1).padStart(2, '0')
 }
 
-export function LandingShowcase({
-  properties = showcaseProperties,
-}: {
-  properties?: ShowcaseProperty[]
-}) {
+export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[] }) {
+  const { sites } = usePublicAcquisitionSites()
   const [index, setIndex] = useState(0)
   const [failed, setFailed] = useState<Record<string, boolean>>({})
   const touchStartX = useRef<number | null>(null)
 
-  const count = properties.length
-  const property = properties[index]
+  // Live published properties drive the showcase; fall back to the static seed
+  // when none are published yet (or Firebase isn't reachable).
+  const live = useMemo<ShowcaseProperty[]>(
+    () =>
+      sites
+        .slice()
+        .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+        .map((site) => ({
+          id: site.id,
+          name: site.publicTitle || site.name,
+          city: cityLabel(site.regionId),
+          imageUrl: heroImage(site),
+          href: '/properties',
+        })),
+    [sites],
+  )
+
+  const items = properties ?? (live.length > 0 ? live : showcaseProperties)
+  const count = items.length
+  const property = items[index] ?? items[0]
+
+  useEffect(() => {
+    if (index >= count) setIndex(0)
+  }, [count, index])
 
   const go = useCallback(
     (delta: number) => setIndex((current) => (current + delta + count) % count),
@@ -126,7 +148,7 @@ export function LandingShowcase({
 
           {/* Dots */}
           <div className="absolute inset-x-0 bottom-7 flex items-center justify-center gap-2">
-            {properties.map((item, itemIndex) => (
+            {items.map((item, itemIndex) => (
               <button
                 key={item.id}
                 type="button"
