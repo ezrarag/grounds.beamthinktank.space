@@ -4,7 +4,8 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CITIES, getCity } from '@/lib/cities'
+import { CITIES } from '@/lib/cities'
+import { useCities } from '@/lib/useCities'
 import type { BeamAssetStage } from '@/lib/useAcquisitionSites'
 
 type AssetCondition = 'unknown' | 'poor' | 'fair' | 'good' | 'excellent'
@@ -69,6 +70,7 @@ function optionalNumber(value: string) {
 }
 
 export function AddPropertyForm() {
+  const { cities } = useCities()
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [lat, setLat] = useState<number | undefined>()
@@ -201,7 +203,7 @@ export function AddPropertyForm() {
         ...(lat !== undefined ? { lat } : {}),
         ...(lng !== undefined ? { lng } : {}),
         regionId: regionId.trim(),
-        city: getCity(regionId)?.label ?? regionId.trim(),
+        city: cities.find((item) => item.id === regionId)?.label ?? regionId.trim(),
         ownerName: ownerName.trim(),
         acquisitionStage,
         condition,
@@ -294,7 +296,7 @@ export function AddPropertyForm() {
               required
               className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
             >
-              {CITIES.map((city) => (
+              {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.label}, {city.state}
                 </option>

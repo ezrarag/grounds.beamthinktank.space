@@ -26,6 +26,12 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // City registry: anyone can read (used for public labels/filters); admin writes.
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Members may read memberships and write only their own.
     match /memberships/{uid} {
       allow read: if signedIn();

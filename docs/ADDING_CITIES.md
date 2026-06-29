@@ -10,6 +10,26 @@ A property added in any registered city populates the public Properties page
 (when published). The civic scan additionally pulls real parcel records from
 that city's open-data portal — once you supply its dataset id.
 
+Cities come from two places, merged at runtime: **built-in** cities in
+`lib/cities.ts` and **admin-managed** cities in the Firestore `cities`
+collection (admin-managed wins on id collision).
+
+## Option A — add a city from the admin (no code, recommended)
+
+1. Sign in as admin → `/portal/acquisition` → **City registry** → Show.
+2. Enter **City name** + **State** (the id like `austin-tx` is generated for you).
+3. Pick **Source type** (`socrata` for most US cities, `ckan` for Milwaukee-style portals).
+4. Paste the **Portal base URL** (e.g. `https://data.austintexas.gov`) and the
+   **Dataset / resource id** (Socrata `xxxx-xxxx`, or CKAN resource UUID).
+5. (Optional) add a **field map** JSON only if scanned fields come back blank.
+6. **Save city.** It immediately appears in the City dropdowns, the civic scan,
+   and `/properties` filters — no redeploy. New sites entered under it populate
+   the front end when published.
+
+Use the steps below (Option B) only when you want a city baked into the codebase.
+
+## Option B — add a built-in city in code
+
 ## What "civic data source" means
 
 Most US cities publish open data on one of two platforms. The scan adapter

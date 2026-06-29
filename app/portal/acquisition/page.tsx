@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AcquisitionMap } from '@/components/AcquisitionMap'
 import { AcquisitionSiteList } from '@/components/AcquisitionSiteList'
 import { AddPropertyForm } from '@/components/AddPropertyForm'
+import { CityRegistryManager } from '@/components/CityRegistryManager'
 import { CivicScanImport } from '@/components/CivicScanImport'
 import { CKANImport } from '@/components/CKANImport'
 import { NGOLinkManager } from '@/components/NGOLinkManager'
@@ -48,6 +49,7 @@ export default function PortalAcquisitionPage() {
               <PropertyMediaManager site={selectedSite} />
               <NGOLinkManager site={selectedSite} />
               <AddPropertyForm />
+              <CityRegistryManager />
               <CivicScanImport />
               <CKANImport />
             </>

@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { CITIES, getCity, type CivicRecord } from '@/lib/cities'
+import type { CivicRecord } from '@/lib/cities'
+import { useCities } from '@/lib/useCities'
 
 const zeroScores = { capacity: 0, impact: 0, stability: 0, revenue: 0, partner: 0 }
 
 export function CivicScanImport() {
+  const { cities } = useCities()
   const [isOpen, setIsOpen] = useState(false)
-  const [cityId, setCityId] = useState(CITIES[0]?.id ?? '')
+  const [cityId, setCityId] = useState('')
+
+  useEffect(() => {
+    if (!cityId && cities.length) setCityId(cities[0].id)
+  }, [cities, cityId])
   const [query, setQuery] = useState('')
   const [records, setRecords] = useState<CivicRecord[]>([])
   const [selected, setSelected] = useState<Record<string, boolean>>({})
@@ -29,9 +35,24 @@ export function CivicScanImport() {
     setIsScanning(true)
 
     try {
-      const params = new URLSearchParams({ city: cityId, limit: '25' })
-      if (query.trim()) params.set('q', query.trim())
-      const response = await fetch(`/api/civic?${params.toString()}`)
+      const selected = cities.find((city) => city.id === cityId)
+      const response = await fetch('/api/civic', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          cityId,
+          q: query.trim() || undefined,
+          limit: 25,
+          source: selected
+            ? {
+                type: selected.dataSource.type,
+                baseUrl: selected.dataSource.baseUrl,
+                resourceId: selected.dataSource.resourceId,
+                fieldMap: selected.dataSource.fieldMap,
+              }
+            : undefined,
+        }),
+      })
       const payload = (await response.json()) as { records?: CivicRecord[]; error?: string }
 
       if (!response.ok) {
@@ -62,7 +83,7 @@ export function CivicScanImport() {
       return
     }
 
-    const city = getCity(cityId)
+    const city = cities.find((item) => item.id === cityId)
     setIsImporting(true)
 
     try {
@@ -139,7 +160,7 @@ export function CivicScanImport() {
                 onChange={(event) => setCityId(event.target.value)}
                 className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
               >
-                {CITIES.map((city) => (
+                {cities.map((city) => (
                   <option key={city.id} value={city.id}>
                     {city.label}, {city.state}
                   </option>

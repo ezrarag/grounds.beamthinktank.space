@@ -20,8 +20,13 @@ export interface CivicDataSource {
   /** Portal base URL, e.g. https://data.milwaukee.gov (CKAN) or a Socrata domain. */
   baseUrl?: string
   /**
-   * Server-side env var holding the dataset/resource id (CKAN resource_id or
-   * Socrata dataset id). Kept in env so real ids/tokens aren't committed.
+   * Inline dataset/resource id. Used by admin-managed (Firestore) cities, where
+   * the id is entered in the UI rather than kept in env. Public, not secret.
+   */
+  resourceId?: string
+  /**
+   * Server-side env var holding the dataset/resource id — used by the built-in
+   * cities so committed code carries no real ids.
    */
   resourceEnv?: string
   /** Server-side env var holding an app token (Socrata) if required. */
@@ -129,6 +134,42 @@ export const CITIES: CityConfig[] = [
     },
   },
 ]
+
+/** Shape of an admin-managed city stored in the Firestore `cities` collection. */
+export interface StoredCity {
+  label: string
+  state: string
+  type: CivicSourceType
+  baseUrl?: string
+  resourceId?: string
+  fieldMap?: Partial<Record<CivicField, string>>
+}
+
+/** Convert a Firestore city doc into a runtime CityConfig. */
+export function storedCityToConfig(id: string, doc: StoredCity): CityConfig {
+  return {
+    id,
+    label: doc.label,
+    state: doc.state,
+    dataSource: {
+      type: doc.type,
+      baseUrl: doc.baseUrl,
+      resourceId: doc.resourceId,
+      fieldMap: doc.fieldMap,
+      appTokenEnv: doc.type === 'socrata' ? 'CIVIC_SOCRATA_APP_TOKEN' : undefined,
+    },
+  }
+}
+
+/** Build a stable city id from a label + state, e.g. "Austin" + "TX" → austin-tx. */
+export function makeCityId(label: string, state: string): string {
+  const slug = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `${slug}-${state.trim().toLowerCase()}`
+}
 
 export function getCity(id?: string | null): CityConfig | undefined {
   if (!id) return undefined
