@@ -60,3 +60,26 @@ body {
     animation: none;
   }
 }
+
+/* Fold-out menu items: each word flips down from the top and fades in. */
+@keyframes grounds-fold-down {
+  from {
+    opacity: 0;
+    transform: rotateX(-90deg) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg) translateY(0);
+  }
+}
+
+.animate-fold-down {
+  transform-origin: top center;
+  animation: grounds-fold-down 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fold-down {
+    animation: none;
+  }
+}

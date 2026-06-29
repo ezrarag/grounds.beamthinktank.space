@@ -7,6 +7,7 @@ import { showcaseProperties, type ShowcaseProperty } from '@/lib/landingShowcase
 import { cityLabel } from '@/lib/cities'
 import { heroImage } from '@/lib/media'
 import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import { cn } from '@/lib/utils'
 
 const SWIPE_THRESHOLD = 40
@@ -38,13 +39,30 @@ export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[
     [sites],
   )
 
-  const items = properties ?? (live.length > 0 ? live : showcaseProperties)
+  const allItems = properties ?? (live.length > 0 ? live : showcaseProperties)
+
+  // Cities with front-end visibility — populates the Grounds dropdown.
+  const cityOptions = useMemo(
+    () => Array.from(new Set(allItems.map((item) => item.city).filter(Boolean))),
+    [allItems],
+  )
+  const [cityFilter, setCityFilter] = useState<string | null>(null)
+
+  const items = useMemo(
+    () => (cityFilter ? allItems.filter((item) => item.city === cityFilter) : allItems),
+    [allItems, cityFilter],
+  )
   const count = items.length
   const property = items[index] ?? items[0]
 
   useEffect(() => {
     if (index >= count) setIndex(0)
   }, [count, index])
+
+  // If the active city filter no longer matches any property, reset to all.
+  useEffect(() => {
+    if (cityFilter && !cityOptions.includes(cityFilter)) setCityFilter(null)
+  }, [cityFilter, cityOptions])
 
   const go = useCallback(
     (delta: number) => setIndex((current) => (current + delta + count) % count),
@@ -94,13 +112,10 @@ export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/55" />
 
-      {/* Brand (header is dissolved on the landing page) */}
-      <Link
-        href="/"
-        className="absolute left-5 top-5 font-mono text-[11px] uppercase tracking-[0.28em] text-white/80 sm:left-8 sm:top-7"
-      >
-        BEAM Grounds
-      </Link>
+      {/* Brand + menus (header is dissolved on the landing page) */}
+      <div className="absolute left-5 top-5 z-50 sm:left-8 sm:top-7">
+        <BeamGroundsNav cities={cityOptions} activeCity={cityFilter} onSelectCity={setCityFilter} />
+      </div>
 
       {/* Counter */}
       {count > 1 ? (

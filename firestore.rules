@@ -11,10 +11,12 @@ service cloud.firestore {
       return signedIn() && request.auth.token.email in ['ezra@beamthink.institute'];
     }
 
-    // Properties: anyone can read public ones; only admins can write.
+    // Properties: anyone can read public ones; any signed-in participant can add
+    // new ones; only admins can edit or delete existing records.
     match /beamAssets/{assetId} {
       allow read: if signedIn() || resource.data.publicVisible == true;
-      allow create, update, delete: if isAdmin();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
     }
 
     // Public site suggestions: anyone may submit; only admins can read/manage.
@@ -26,10 +28,18 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // City registry: anyone can read (used for public labels/filters); admin writes.
+    // City registry: anyone can read (used for public labels/filters); any
+    // signed-in participant can add a city; only admins edit/delete existing.
     match /cities/{cityId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // Neighborhood donations: anyone signed in may record one; admins read/manage.
+    match /donations/{donationId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
     }
 
     // Members may read memberships and write only their own.
