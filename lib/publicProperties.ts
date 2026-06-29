@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { seededPublicProperties } from '@/lib/publicPropertySeeds'
 import type { BeamAsset } from '@/lib/useAcquisitionSites'
 import { getPropertySlug } from '@/lib/propertySlugs'
 
@@ -71,7 +72,7 @@ async function fetchBeamAssets() {
   const apiKey = getEnv('NEXT_PUBLIC_FIREBASE_API_KEY')
 
   if (!baseUrl || !apiKey) {
-    return []
+    return seededPublicProperties
   }
 
   const response = await fetch(`${baseUrl}/beamAssets?key=${apiKey}`, {
@@ -166,11 +167,11 @@ function parseBeamAsset(document: FirestoreDocument): BeamAsset {
 
 export async function getPublicProperties() {
   const docs = await fetchBeamAssets()
-  return docs.map(parseBeamAsset).filter((site) => site.publicVisible)
+  const sites = docs.map(parseBeamAsset).filter((site) => site.publicVisible)
+  return sites.length > 0 ? sites : seededPublicProperties
 }
 
 export async function getPublicPropertyBySlug(slug: string) {
   const properties = await getPublicProperties()
   return properties.find((site) => getPropertySlug(site) === slug) ?? null
 }
-

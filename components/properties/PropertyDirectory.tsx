@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { PropertyGalleryFilters } from '@/components/PropertyGalleryFilters'
 import { PropertyTeaserCard } from '@/components/PropertyTeaserCard'
+import { seededPublicProperties } from '@/lib/publicPropertySeeds'
 import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
 
 export function PropertyDirectory({ audience = 'public' }: { audience?: 'public' | 'participant' }) {
@@ -10,23 +11,25 @@ export function PropertyDirectory({ audience = 'public' }: { audience?: 'public'
   const [activeNode, setActiveNode] = useState('all')
   const [activeClass, setActiveClass] = useState('all')
 
+  const displayProperties = sites.length > 0 ? sites : seededPublicProperties
+
   const nodes = useMemo(
-    () => Array.from(new Set(sites.map((site) => site.regionId).filter(Boolean))),
-    [sites],
+    () => Array.from(new Set(displayProperties.map((site) => site.regionId).filter(Boolean))),
+    [displayProperties],
   )
   const classes = useMemo(
-    () => Array.from(new Set(sites.map((site) => site.locationType || 'civic-anchor'))),
-    [sites],
+    () => Array.from(new Set(displayProperties.map((site) => site.locationType || 'civic-anchor'))),
+    [displayProperties],
   )
 
   const filtered = useMemo(
     () =>
-      sites.filter((site) => {
+      displayProperties.filter((site) => {
         const nodeOk = activeNode === 'all' || site.regionId === activeNode
         const classOk = activeClass === 'all' || (site.locationType || 'civic-anchor') === activeClass
         return nodeOk && classOk
       }),
-    [sites, activeNode, activeClass],
+    [displayProperties, activeNode, activeClass],
   )
 
   const intro =
@@ -52,7 +55,7 @@ export function PropertyDirectory({ audience = 'public' }: { audience?: 'public'
         onClassChange={setActiveClass}
       />
 
-      {loading ? (
+      {loading && sites.length === 0 ? (
         <div className="mt-4 flex min-h-72 items-center justify-center rounded-[20px] border border-white/10 bg-white/[0.03] font-dm text-sm text-white/55">
           Loading sites…
         </div>
@@ -74,4 +77,3 @@ export function PropertyDirectory({ audience = 'public' }: { audience?: 'public'
     </div>
   )
 }
-
