@@ -6,6 +6,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { showcaseProperties, type ShowcaseProperty } from '@/lib/landingShowcase'
 import { cityLabel } from '@/lib/cities'
 import { heroImage } from '@/lib/media'
+import { getPropertyHref } from '@/lib/propertySlugs'
 import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
 import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import { cn } from '@/lib/utils'
@@ -34,7 +35,7 @@ export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[
           name: site.publicTitle || site.name,
           city: cityLabel(site.regionId),
           imageUrl: heroImage(site),
-          href: '/properties',
+          href: getPropertyHref(site),
         })),
     [sites],
   )

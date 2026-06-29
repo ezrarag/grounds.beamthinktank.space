@@ -8,7 +8,7 @@ service cloud.firestore {
 
     // Admin allowlist — keep in sync with NEXT_PUBLIC_ADMIN_EMAILS / lib/adminAccess.ts.
     function isAdmin() {
-      return signedIn() && request.auth.token.email in ['ezra@beamthink.institute'];
+      return signedIn() && request.auth.token.email in ['ezra@readyaimgo.biz'];
     }
 
     // Properties: anyone can read public ones; any signed-in participant can add
@@ -46,6 +46,16 @@ service cloud.firestore {
     match /memberships/{uid} {
       allow read: if signedIn();
       allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /redevelopmentProjects/{projectId} {
+      allow read: if resource.data.isPublished == true;
+      allow write: if signedIn();
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if signedIn();
+      }
     }
 
     // Everything else (site/pathway config, etc.): signed-in read, admin-only write.

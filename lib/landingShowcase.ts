@@ -17,7 +17,7 @@ export const showcaseProperties: ShowcaseProperty[] = [
     city: 'Milwaukee',
     imageUrl:
       'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1600&q=80',
-    href: '/properties',
+    href: '/properties/central-united-methodist-church',
   },
   {
     id: 'former-milwaukee-public-museum',
@@ -25,7 +25,7 @@ export const showcaseProperties: ShowcaseProperty[] = [
     city: 'Milwaukee',
     imageUrl:
       'https://images.unsplash.com/photo-1565060169187-5284a3f7af8e?auto=format&fit=crop&w=1600&q=80',
-    href: '/properties',
+    href: '/properties/former-milwaukee-public-museum',
   },
   {
     id: 'milwaukee-public-library-central',
@@ -33,6 +33,6 @@ export const showcaseProperties: ShowcaseProperty[] = [
     city: 'Milwaukee',
     imageUrl:
       'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1600&q=80',
-    href: '/properties',
+    href: '/properties/milwaukee-public-library-central-branch-model',
   },
 ]
