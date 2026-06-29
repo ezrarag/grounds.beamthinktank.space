@@ -4,7 +4,7 @@
 // NOTE: this gates the admin UI. The authoritative enforcement is in
 // firestore.rules, which must list the same emails (see isAdmin() there).
 
-const DEFAULT_ADMIN_EMAILS = ['ezra@beamthink.institute']
+const DEFAULT_ADMIN_EMAILS = ['ezra@readyaimgo.biz']
 
 const configured = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',')
   .map((email) => email.trim().toLowerCase())
