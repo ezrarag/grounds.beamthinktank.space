@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import type { MediaItem } from '@/lib/media'
 
 export type BeamAssetStage =
   | 'SIGNAL'
@@ -59,6 +60,9 @@ export interface BeamAsset {
   cohortPool?: 'acquisition' | 'financing' | 'cohort' | 'civic' | 'all'
   // Friendly city label (regionId is the canonical city id). See lib/cities.ts.
   city?: string
+  // Media (see lib/media.ts): a hero image plus an ordered gallery.
+  heroImageUrl?: string
+  media?: MediaItem[]
   // Public-facing display overrides (fall back to name / publicNarrative).
   publicTitle?: string
   publicSummary?: string

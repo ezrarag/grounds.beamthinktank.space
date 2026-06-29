@@ -77,6 +77,8 @@ const SEED_PROPERTIES: BeamAsset[] = [
     ckanZoning: 'RT4',
     ckanTaxStatus: 'exempt',
     ckanAssessedValue: 0,
+    heroImageUrl:
+      'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200&q=80',
     scores: emptyScores,
     stageHistory: [],
     linkedProjectIds: [],
@@ -137,6 +139,8 @@ const SEED_PROPERTIES: BeamAsset[] = [
     ckanZoning: 'C9A',
     ckanTaxStatus: 'exempt',
     ckanAssessedValue: 0,
+    heroImageUrl:
+      'https://images.unsplash.com/photo-1565060169187-5284a3f7af8e?auto=format&fit=crop&w=1200&q=80',
     scores: emptyScores,
     stageHistory: [],
     linkedProjectIds: [],
@@ -190,6 +194,8 @@ const SEED_PROPERTIES: BeamAsset[] = [
     ckanZoning: 'C9A',
     ckanTaxStatus: 'exempt',
     ckanAssessedValue: 0,
+    heroImageUrl:
+      'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
     scores: emptyScores,
     stageHistory: [],
     linkedProjectIds: [],

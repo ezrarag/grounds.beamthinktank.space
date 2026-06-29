@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import type { BeamAsset, BeamAssetStage } from '@/lib/useAcquisitionSites'
 import { cityLabel } from '@/lib/cities'
+import { hasMedia } from '@/lib/media'
+import { PropertyMedia } from '@/components/PropertyMedia'
 import { cn } from '@/lib/utils'
 
 const STAGE_BADGE: Record<BeamAssetStage, string> = {
@@ -141,6 +143,13 @@ export function PropertyTeaserCard({ site }: { site: BeamAsset }) {
 
   return (
     <article className="rounded-[20px] border border-white/10 bg-white/[0.04] p-5">
+      {/* Hero media */}
+      {hasMedia(site) ? (
+        <div className="-mx-5 -mt-5 mb-4">
+          <PropertyMedia source={site} alt={title} className="h-44 w-full rounded-t-[20px]" />
+        </div>
+      ) : null}
+
       {/* 1. Eyebrow row */}
       <div className="flex items-center justify-between gap-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-beam-gold">

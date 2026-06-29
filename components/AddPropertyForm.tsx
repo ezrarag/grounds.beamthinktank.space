@@ -81,6 +81,7 @@ export function AddPropertyForm() {
   const [stewardshipStatus, setStewardshipStatus] = useState<StewardshipStatus>('unmonitored')
   const [operatorNarrative, setOperatorNarrative] = useState('')
   const [primaryUseCases, setPrimaryUseCases] = useState('')
+  const [heroImageUrl, setHeroImageUrl] = useState('')
   const [publishPublic, setPublishPublic] = useState(false)
   const [publicTitle, setPublicTitle] = useState('')
   const [publicSummary, setPublicSummary] = useState('')
@@ -144,6 +145,7 @@ export function AddPropertyForm() {
     setStewardshipStatus('unmonitored')
     setOperatorNarrative('')
     setPrimaryUseCases('')
+    setHeroImageUrl('')
     setPublishPublic(false)
     setPublicTitle('')
     setPublicSummary('')
@@ -207,6 +209,7 @@ export function AddPropertyForm() {
         stewardshipStatus,
         operatorNarrative: operatorNarrative.trim(),
         primaryUseCases: parseCommaList(primaryUseCases),
+        ...(heroImageUrl.trim() ? { heroImageUrl: heroImageUrl.trim() } : {}),
         publicVisible: publishPublic,
         ...(publishPublic
           ? {
@@ -374,6 +377,16 @@ export function AddPropertyForm() {
             value={primaryUseCases}
             onChange={(event) => setPrimaryUseCases(event.target.value)}
             placeholder="food hub, training space, clinic"
+            className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
+          />
+        </label>
+
+        <label className="block text-sm text-white/70">
+          Hero image URL
+          <input
+            value={heroImageUrl}
+            onChange={(event) => setHeroImageUrl(event.target.value)}
+            placeholder="https://… (manage a full gallery after saving)"
             className="mt-1 w-full rounded-2xl border border-white/10 bg-[#12211c] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
           />
         </label>

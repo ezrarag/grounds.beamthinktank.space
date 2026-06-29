@@ -8,6 +8,7 @@ import { CivicScanImport } from '@/components/CivicScanImport'
 import { CKANImport } from '@/components/CKANImport'
 import { NGOLinkManager } from '@/components/NGOLinkManager'
 import { PropertyCard } from '@/components/PropertyCard'
+import { PropertyMediaManager } from '@/components/PropertyMediaManager'
 import { ProjectionPanel } from '@/components/ProjectionPanel'
 import { PublicSitePublishingControls } from '@/components/PublicSitePublishingControls'
 import { PortalPageShell } from '@/components/PortalPageShell'
@@ -44,6 +45,7 @@ export default function PortalAcquisitionPage() {
           {!adminReady ? null : isAdmin ? (
             <>
               <PublicSitePublishingControls site={selectedSite} />
+              <PropertyMediaManager site={selectedSite} />
               <NGOLinkManager site={selectedSite} />
               <AddPropertyForm />
               <CivicScanImport />
