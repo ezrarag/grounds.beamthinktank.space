@@ -24,6 +24,10 @@ interface FirestoreDocument {
   fields?: Record<string, FirestoreValue>
 }
 
+function isFirestoreDocumentArray(value: unknown): value is FirestoreDocument[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'object' && item !== null && 'name' in item)
+}
+
 function getEnv(name: string) {
   const value = process.env[name]
   return value && value !== 'undefined' ? value : null
@@ -80,11 +84,11 @@ async function fetchBeamAssets() {
   })
 
   if (!response.ok) {
-    throw new Error(`Firestore request failed for beamAssets: ${response.status}`)
+    return seededPublicProperties
   }
 
   const payload = (await response.json()) as { documents?: FirestoreDocument[] }
-  return payload.documents ?? []
+  return payload.documents ?? seededPublicProperties
 }
 
 function parseString(value: unknown) {
@@ -166,8 +170,13 @@ function parseBeamAsset(document: FirestoreDocument): BeamAsset {
 }
 
 export async function getPublicProperties() {
-  const docs = await fetchBeamAssets()
-  const sites = docs.map(parseBeamAsset).filter((site) => site.publicVisible)
+  const records = await fetchBeamAssets()
+
+  if (!isFirestoreDocumentArray(records)) {
+    return records
+  }
+
+  const sites = records.map(parseBeamAsset).filter((site) => site.publicVisible)
   return sites.length > 0 ? sites : seededPublicProperties
 }
 
