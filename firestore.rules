@@ -8,7 +8,7 @@ service cloud.firestore {
 
     // Admin allowlist — keep in sync with NEXT_PUBLIC_ADMIN_EMAILS / lib/adminAccess.ts.
     function isAdmin() {
-      return signedIn() && request.auth.token.email in ['ezra@beamthink.institute'];
+      return signedIn() && request.auth.token.email in ['ezra@readyaimgo.biz'];
     }
 
     // Properties: anyone can read public ones; any signed-in participant can add
