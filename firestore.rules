@@ -42,6 +42,41 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Public facilities testimony: anyone may submit; only admins may review or manage.
+    match /groundsTestimonies/{testimonyId} {
+      allow create: if request.resource.data.responses is map
+        && request.resource.data.discipline in ['music', 'visual-arts', 'engineering', 'general']
+        && request.resource.data.consentLevel in [
+          'private-grounds-only',
+          'partner-review-anonymized',
+          'public-anonymized',
+          'public-attributed',
+        ]
+        && request.resource.data.hasDocumentation is bool
+        && request.resource.data.mode in ['self', 'interview']
+        && request.resource.data.keys().hasAll([
+          'responses',
+          'discipline',
+          'consentLevel',
+          'hasDocumentation',
+          'mode',
+          'createdAt',
+        ])
+        && request.resource.data.keys().hasOnly([
+          'responses',
+          'discipline',
+          'consentLevel',
+          'hasDocumentation',
+          'contact',
+          'mode',
+          'enteredBy',
+          'createdAt',
+        ])
+        && (!('contact' in request.resource.data) || request.resource.data.contact is string)
+        && (!('enteredBy' in request.resource.data) || request.resource.data.enteredBy == 'ezra');
+      allow read, update, delete: if isAdmin();
+    }
+
     // Members may read memberships and write only their own.
     match /memberships/{uid} {
       allow read: if signedIn();
