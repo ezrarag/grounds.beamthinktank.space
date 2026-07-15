@@ -4,10 +4,12 @@ import { usePathname } from 'next/navigation'
 import { SiteFooter } from '@/components/SiteFooter'
 import { groundsConfig } from '@/lib/ngoConfig'
 
-// The landing page is a single full-viewport card with no footer. Every other
-// route keeps the global footer.
+const footerlessPublicRoutes = ['/', '/about', '/properties', '/testimony', '/tracks']
+
 export function ConditionalFooter() {
   const pathname = usePathname()
-  if (pathname === '/') return null
+  if (footerlessPublicRoutes.some((route) => pathname === route || (route !== '/' && pathname.startsWith(`${route}/`)))) {
+    return null
+  }
   return <SiteFooter config={groundsConfig} />
 }

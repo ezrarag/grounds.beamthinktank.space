@@ -78,8 +78,27 @@ body {
   animation: grounds-fold-down 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+@keyframes testimony-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-testimony-step-in {
+  animation: testimony-step-in 0.42s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fold-down {
+    animation: none;
+  }
+
+  .animate-testimony-step-in {
     animation: none;
   }
 }
