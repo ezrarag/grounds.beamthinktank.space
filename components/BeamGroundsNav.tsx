@@ -16,13 +16,15 @@ const ITEM_CLASS =
   'block whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.22em] text-white/80 transition hover:text-white'
 
 export function BeamGroundsNav({
-  cities,
-  activeCity,
+  cities = [],
+  activeCity = null,
   onSelectCity,
+  groundsLinks,
 }: {
-  cities: string[]
-  activeCity: string | null
-  onSelectCity: (city: string | null) => void
+  cities?: string[]
+  activeCity?: string | null
+  onSelectCity?: (city: string | null) => void
+  groundsLinks?: Array<{ label: string; href: string }>
 }) {
   const [open, setOpen] = useState<MenuKey>(null)
   const navRef = useRef<HTMLDivElement>(null)
@@ -98,14 +100,25 @@ export function BeamGroundsNav({
         {open === 'grounds' ? (
           <div className="absolute left-0 top-full z-50 min-w-[12rem] pt-3 [perspective:600px]">
             <div className="space-y-2.5 rounded-2xl border border-white/12 bg-black/70 p-4 backdrop-blur-xl">
-              {groundsOptions.map((option, index) => {
+              {groundsLinks?.map((link, index) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(null)}
+                  className={cn(ITEM_CLASS, 'animate-fold-down')}
+                  style={{ animationDelay: `${index * 60}ms` }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {!groundsLinks && groundsOptions.map((option, index) => {
                 const isActive = option.value === activeCity
                 return (
                   <button
                     key={option.label}
                     type="button"
                     onClick={() => {
-                      onSelectCity(option.value)
+                      onSelectCity?.(option.value)
                       setOpen(null)
                     }}
                     className={cn(
