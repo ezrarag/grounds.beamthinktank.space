@@ -24,6 +24,7 @@ export interface PropertySiteOption {
   name: string
   address: string
   city: string
+  state: string
   parcelId: string
   zoning: string
   essentialRepairsCost: number
@@ -31,11 +32,13 @@ export interface PropertySiteOption {
 }
 
 export const CITY_HOMESTEAD_SITES: PropertySiteOption[] = [
+  // MILWAUKEE NODE
   {
     id: 'mke-cumc',
-    name: 'Central United Methodist Sanctuary ($1 Homestead Program)',
+    name: 'Central United Methodist Sanctuary ($1 Homestead)',
     address: '639 N 25th St, Milwaukee, WI',
-    city: 'Milwaukee, WI',
+    city: 'Milwaukee',
+    state: 'WI',
     parcelId: '388-1204-000',
     zoning: 'RT4 Civic / Residential',
     essentialRepairsCost: 18500,
@@ -45,7 +48,8 @@ export const CITY_HOMESTEAD_SITES: PropertySiteOption[] = [
     id: 'mke-wells',
     name: 'Wells Street Civic Anchor Site',
     address: '800 W Wells St, Milwaukee, WI',
-    city: 'Milwaukee, WI',
+    city: 'Milwaukee',
+    state: 'WI',
     parcelId: '392-0501-100',
     zoning: 'C9A Urban Commercial',
     essentialRepairsCost: 24000,
@@ -55,21 +59,62 @@ export const CITY_HOMESTEAD_SITES: PropertySiteOption[] = [
     id: 'mke-wisconsin',
     name: 'Wisconsin Ave Live/Work Studio Parcel',
     address: '814 W Wisconsin Ave, Milwaukee, WI',
-    city: 'Milwaukee, WI',
+    city: 'Milwaukee',
+    state: 'WI',
     parcelId: '392-0520-000',
     zoning: 'C9B Mixed Use',
     essentialRepairsCost: 12000,
     status: 'Sweat-Equity Path-to-Own',
   },
+
+  // ATLANTA NODE
   {
     id: 'atl-auburn',
     name: 'Auburn Ave Cultural Preservation Site',
     address: '450 Auburn Ave NE, Atlanta, GA',
-    city: 'Atlanta, GA',
+    city: 'Atlanta',
+    state: 'GA',
     parcelId: '14-0052-0004-012',
     zoning: 'HC-20A Historic',
     essentialRepairsCost: 21500,
     status: 'BEAM Land Trust Priority',
+  },
+  {
+    id: 'atl-westend',
+    name: 'West End Artist Residency Parcel',
+    address: '890 Ralph David Abernathy Blvd, Atlanta, GA',
+    city: 'Atlanta',
+    state: 'GA',
+    parcelId: '14-0118-0002-045',
+    zoning: 'MRC-1 Mixed Residential',
+    essentialRepairsCost: 16800,
+    status: 'Available Cohort Site',
+  },
+
+  // TAMPA NODE
+  {
+    id: 'tpa-ybor',
+    name: 'Ybor City Artisan Studio & Housing',
+    address: '1901 E 7th Ave, Tampa, FL',
+    city: 'Tampa',
+    state: 'FL',
+    parcelId: 'A-18-29-19-4A0-000034',
+    zoning: 'YC-1 Historic Commercial',
+    essentialRepairsCost: 19200,
+    status: 'Gulf Coast Anchor Site',
+  },
+
+  // ORLANDO NODE
+  {
+    id: 'orl-parramore',
+    name: 'Parramore Community Land Trust Site',
+    address: '620 W South St, Orlando, FL',
+    city: 'Orlando',
+    state: 'FL',
+    parcelId: '26-22-29-5840-01-120',
+    zoning: 'R-3A Urban Residential',
+    essentialRepairsCost: 15500,
+    status: 'Residency Acquisition Eligible',
   },
 ]
 
@@ -77,10 +122,17 @@ export interface PropertyMatcherModalProps {
   isOpen: boolean
   onClose: () => void
   onLinked?: (acquisition: GroundsActiveAcquisition) => void
+  initialCity?: string | null
 }
 
-export function PropertyMatcherModal({ isOpen, onClose, onLinked }: PropertyMatcherModalProps) {
+export function PropertyMatcherModal({
+  isOpen,
+  onClose,
+  onLinked,
+  initialCity,
+}: PropertyMatcherModalProps) {
   const { user } = usePortalAccessState()
+  const [selectedCityFilter, setSelectedCityFilter] = useState<string>(initialCity || 'All')
   const [selectedSite, setSelectedSite] = useState<PropertySiteOption>(CITY_HOMESTEAD_SITES[0])
   const [customAddress, setCustomAddress] = useState('')
   const [searching, setSearching] = useState(false)
@@ -89,6 +141,13 @@ export function PropertyMatcherModal({ isOpen, onClose, onLinked }: PropertyMatc
   const [feedback, setFeedback] = useState<string | null>(null)
 
   if (!isOpen) return null
+
+  const filteredSites =
+    selectedCityFilter === 'All'
+      ? CITY_HOMESTEAD_SITES
+      : CITY_HOMESTEAD_SITES.filter(
+          (s) => s.city.toLowerCase() === selectedCityFilter.toLowerCase(),
+        )
 
   async function handleLookupCustom() {
     if (!customAddress.trim()) return
@@ -172,12 +231,12 @@ export function PropertyMatcherModal({ isOpen, onClose, onLinked }: PropertyMatc
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
-        {/* Modal Close Header */}
+        {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
             <Home className="h-5 w-5 text-slate-700" />
             <h2 className="text-lg font-bold text-[#0f172a]">
-              $1 Dollar City Homestead Property Matcher
+              Multi-Location $1 Dollar Property Matcher
             </h2>
           </div>
           <button
@@ -189,19 +248,40 @@ export function PropertyMatcherModal({ isOpen, onClose, onLinked }: PropertyMatc
           </button>
         </div>
 
-        {/* Modal Content */}
+        {/* Modal Body */}
         <div className="mt-4 space-y-5">
           <p className="text-xs text-slate-600 leading-relaxed">
-            Select an active city $1 dollar homestead site or municipal tax-foreclosed parcel to link to your BEAM Grounds profile. This attaches the parcel TAXKEY, essential repair budget, and 180-day compliance window to your sweat-equity ledger.
+            Choose a target city node to browse active $1 dollar homestead sites and link them to your BEAM Grounds participant profile.
           </p>
+
+          {/* City Node Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">
+              Target City:
+            </span>
+            {['All', 'Milwaukee', 'Atlanta', 'Tampa', 'Orlando'].map((cityName) => {
+              const active = selectedCityFilter.toLowerCase() === cityName.toLowerCase()
+              return (
+                <button
+                  key={cityName}
+                  onClick={() => setSelectedCityFilter(cityName)}
+                  type="button"
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    active
+                      ? 'bg-[#1e293b] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {cityName}
+                </button>
+              )
+            })}
+          </div>
 
           {/* Seeded City Sites Grid */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Select City Homestead Site
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {CITY_HOMESTEAD_SITES.map((site) => {
+            <div className="max-h-64 overflow-y-auto no-scrollbar grid gap-3 sm:grid-cols-2 p-1">
+              {filteredSites.map((site) => {
                 const isSelected = selectedSite.id === site.id && !customResult
                 return (
                   <button
@@ -225,7 +305,7 @@ export function PropertyMatcherModal({ isOpen, onClose, onLinked }: PropertyMatc
                             : 'bg-white text-slate-600 border border-slate-200'
                         }`}
                       >
-                        {site.city}
+                        {site.city}, {site.state}
                       </span>
                       <h4 className="mt-1.5 text-sm font-semibold leading-tight">{site.name}</h4>
                       <p

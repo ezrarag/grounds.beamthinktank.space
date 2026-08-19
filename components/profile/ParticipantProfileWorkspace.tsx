@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
+  Building2,
   ChevronDown,
   ChevronUp,
+  Compass,
   CreditCard,
+  Filter,
   Hammer,
   Home,
   LifeBuoy,
@@ -20,8 +23,12 @@ import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import { HousingPreferencesForm } from '@/components/profile/HousingPreferencesForm'
 import { PathToDeedTracker } from '@/components/profile/PathToDeedTracker'
 import { HousingSafetyNetCard } from '@/components/profile/HousingSafetyNetCard'
-import { PropertyMatcherModal } from '@/components/profile/PropertyMatcherModal'
-import type { GroundsActiveAcquisition } from '@/lib/types/groundsProfile'
+import {
+  PropertyMatcherModal,
+  CITY_HOMESTEAD_SITES,
+  type PropertySiteOption,
+} from '@/components/profile/PropertyMatcherModal'
+import type { GroundsActiveAcquisition, GroundsTargetLocation } from '@/lib/types/groundsProfile'
 
 type ActiveDrawerTab = 'goals' | 'deed' | 'safety' | null
 
@@ -30,9 +37,15 @@ export function ParticipantProfileWorkspace() {
   const [activeDrawerTab, setActiveDrawerTab] = useState<ActiveDrawerTab>(null)
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
   const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
+  const [targetLocations, setTargetLocations] = useState<GroundsTargetLocation[]>([
+    { city: 'Milwaukee', state: 'WI', priority: 1 },
+    { city: 'Atlanta', state: 'GA', priority: 2 },
+  ])
+  const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('All')
   const [matcherOpen, setMatcherOpen] = useState(false)
+  const [matcherCity, setMatcherCity] = useState<string | null>(null)
 
-  // Fetch profile details (photo & active acquisition) from Firestore if signed in
+  // Fetch participant profile from Firestore if signed in
   useEffect(() => {
     if (!user || !db) return
     let isCancelled = false
@@ -48,9 +61,12 @@ export function ParticipantProfileWorkspace() {
           if (data.activeAcquisition) {
             setActiveAcquisition(data.activeAcquisition as GroundsActiveAcquisition)
           }
+          if (Array.isArray(data.targetLocations) && data.targetLocations.length > 0) {
+            setTargetLocations(data.targetLocations as GroundsTargetLocation[])
+          }
         }
       } catch (err) {
-        console.warn('Unable to load photo from participantProfiles:', err)
+        console.warn('Unable to load profile from participantProfiles:', err)
       }
     }
 
@@ -70,9 +86,21 @@ export function ParticipantProfileWorkspace() {
     firestorePhoto ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
 
+  // Unique target city names list
+  const targetCityNames = Array.from(new Set(targetLocations.map((l) => l.city)))
+  const targetNodesSummary = targetCityNames.map((c) => c.slice(0, 3).toUpperCase()).join(' • ')
+
+  // Filter properties by location
+  const locationAssociatedProperties =
+    selectedLocationFilter === 'All'
+      ? CITY_HOMESTEAD_SITES
+      : CITY_HOMESTEAD_SITES.filter(
+          (s) => s.city.toLowerCase() === selectedLocationFilter.toLowerCase(),
+        )
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#0f172a] font-sans selection:bg-slate-200">
-      {/* Main Container - Chrome Free */}
+      {/* Main Container */}
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile Info Header Section */}
         <section className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -101,10 +129,13 @@ export function ParticipantProfileWorkspace() {
             </div>
           </div>
 
-          {/* Quick Action Button for Property Matcher */}
+          {/* Quick Action Button */}
           <div className="shrink-0 pt-2 sm:pt-0">
             <button
-              onClick={() => setMatcherOpen(true)}
+              onClick={() => {
+                setMatcherCity(null)
+                setMatcherOpen(true)
+              }}
               type="button"
               className="inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-900 shadow-sm transition"
             >
@@ -125,7 +156,6 @@ export function ParticipantProfileWorkspace() {
             <div className="relative my-6 flex items-center justify-center">
               {/* Donut Progress Circle */}
               <svg className="h-36 w-36 -rotate-90 transform" viewBox="0 0 36 36">
-                {/* Background Track */}
                 <path
                   className="text-slate-200"
                   strokeWidth="3.5"
@@ -133,7 +163,6 @@ export function ParticipantProfileWorkspace() {
                   fill="none"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 />
-                {/* Dark Navy Progress Arc (70%) */}
                 <path
                   className="text-[#1e293b]"
                   strokeDasharray="72, 100"
@@ -145,7 +174,6 @@ export function ParticipantProfileWorkspace() {
                 />
               </svg>
 
-              {/* Number inside Donut */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-extrabold text-[#0f172a]">72</span>
                 <span className="text-xs font-normal text-slate-500">hrs</span>
@@ -162,7 +190,6 @@ export function ParticipantProfileWorkspace() {
             </h2>
 
             <div className="my-6 flex h-36 items-center justify-center">
-              {/* Payment Card Graphic */}
               <div className="relative h-20 w-32 rounded-xl border-2 border-[#1e293b] bg-slate-50 p-2 shadow-sm">
                 <div className="h-4 w-full rounded bg-[#1e293b]" />
                 <div className="mt-4 flex items-center justify-between px-1">
@@ -188,9 +215,7 @@ export function ParticipantProfileWorkspace() {
             </h2>
 
             <div className="my-6 flex h-36 w-full items-center justify-center">
-              {/* Stylized Map Graphic */}
               <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-[#eef2f6]">
-                {/* SVG Vector Map Outline */}
                 <svg className="h-full w-full opacity-40" viewBox="0 0 200 120" fill="none">
                   <path
                     d="M10 20 C 40 10, 80 30, 120 15 C 160 0, 190 25, 195 60 C 200 95, 160 110, 110 105 C 60 100, 20 85, 10 20 Z"
@@ -198,22 +223,15 @@ export function ParticipantProfileWorkspace() {
                     stroke="#94a3b8"
                     strokeWidth="1"
                   />
-                  <path
-                    d="M70 40 Q 90 60 140 85"
-                    stroke="#cbd5e1"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                  />
                 </svg>
 
-                {/* Pin 1: MKE (Milwaukee) */}
+                {/* Pins for selected target locations */}
                 <div className="absolute left-[38%] top-[25%] flex flex-col items-center">
                   <div className="flex items-center gap-1 rounded-md bg-[#e11d48] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm">
                     <MapPin className="h-2.5 w-2.5" /> MKE
                   </div>
                 </div>
 
-                {/* Pin 2: ATL (Atlanta) */}
                 <div className="absolute right-[24%] bottom-[20%] flex flex-col items-center">
                   <div className="flex items-center gap-1 rounded-md bg-[#0d9488] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm">
                     <MapPin className="h-2.5 w-2.5" /> ATL
@@ -223,9 +241,116 @@ export function ParticipantProfileWorkspace() {
             </div>
 
             <div className="text-center">
-              <span className="text-2xl font-extrabold text-[#0f172a]">2 Cities</span>
-              <p className="mt-1 text-[11px] text-slate-400">Milwaukee • Atlanta</p>
+              <span className="text-2xl font-extrabold text-[#0f172a]">
+                {targetCityNames.length} {targetCityNames.length === 1 ? 'City' : 'Cities'}
+              </span>
+              <p className="mt-1 text-[11px] text-slate-400">{targetNodesSummary}</p>
             </div>
+          </div>
+        </section>
+
+        {/* Multi-Location Property Association & Feed Section */}
+        <section className="mt-12 space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-slate-700" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f172a]">
+                  Location-Based Property Feed
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Browse properties associated with your chosen target residency nodes.
+              </p>
+            </div>
+
+            {/* City Location Filter Pills */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setSelectedLocationFilter('All')}
+                type="button"
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
+                  selectedLocationFilter === 'All'
+                    ? 'bg-[#1e293b] text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All Nodes ({CITY_HOMESTEAD_SITES.length})
+              </button>
+
+              {targetCityNames.map((city) => {
+                const isSelected = selectedLocationFilter.toLowerCase() === city.toLowerCase()
+                const count = CITY_HOMESTEAD_SITES.filter(
+                  (s) => s.city.toLowerCase() === city.toLowerCase(),
+                ).length
+                return (
+                  <button
+                    key={city}
+                    onClick={() => setSelectedLocationFilter(city)}
+                    type="button"
+                    className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
+                      isSelected
+                        ? 'bg-[#1e293b] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {city} ({count})
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Location Associated Property Cards */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            {locationAssociatedProperties.map((site) => {
+              const isLinked = activeAcquisition?.parcelId === site.parcelId
+              return (
+                <div
+                  key={site.id}
+                  className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition ${
+                    isLinked
+                      ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-block rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-slate-700">
+                        {site.city}, {site.state}
+                      </span>
+                      {isLinked && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                          <ShieldCheck className="h-3 w-3" /> Linked to Profile
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="mt-2 text-sm font-bold text-[#0f172a]">{site.name}</h4>
+                    <p className="mt-1 text-xs text-slate-500">{site.address}</p>
+                  </div>
+
+                  <div className="mt-4 border-t border-slate-200 pt-3">
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-600">
+                      <span>TAXKEY: {site.parcelId}</span>
+                      <span className="font-bold text-[#0f172a]">
+                        ${site.essentialRepairsCost.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setMatcherCity(site.city)
+                        setMatcherOpen(true)
+                      }}
+                      type="button"
+                      className="mt-3 w-full rounded-xl bg-slate-800 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-900 transition"
+                    >
+                      {isLinked ? 'Manage Linked Property' : 'Link This Site'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </section>
 
@@ -316,10 +441,11 @@ export function ParticipantProfileWorkspace() {
       {/* Property Matcher Modal */}
       <PropertyMatcherModal
         isOpen={matcherOpen}
+        initialCity={matcherCity}
         onClose={() => setMatcherOpen(false)}
         onLinked={(newAcquisition) => {
           setActiveAcquisition(newAcquisition)
-          setActiveDrawerTab('deed') // Automatically open deed tracker view
+          setActiveDrawerTab('deed')
         }}
       />
     </div>
