@@ -10,6 +10,7 @@ import {
   Home,
   LifeBuoy,
   MapPin,
+  Plus,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
@@ -19,6 +20,8 @@ import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import { HousingPreferencesForm } from '@/components/profile/HousingPreferencesForm'
 import { PathToDeedTracker } from '@/components/profile/PathToDeedTracker'
 import { HousingSafetyNetCard } from '@/components/profile/HousingSafetyNetCard'
+import { PropertyMatcherModal } from '@/components/profile/PropertyMatcherModal'
+import type { GroundsActiveAcquisition } from '@/lib/types/groundsProfile'
 
 type ActiveDrawerTab = 'goals' | 'deed' | 'safety' | null
 
@@ -26,13 +29,15 @@ export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
   const [activeDrawerTab, setActiveDrawerTab] = useState<ActiveDrawerTab>(null)
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
+  const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
+  const [matcherOpen, setMatcherOpen] = useState(false)
 
-  // Fetch avatar / headshot from Firestore participantProfiles if signed in
+  // Fetch profile details (photo & active acquisition) from Firestore if signed in
   useEffect(() => {
     if (!user || !db) return
     let isCancelled = false
 
-    async function loadPhoto() {
+    async function loadProfile() {
       try {
         const snap = await getDoc(doc(db!, 'participantProfiles', user!.uid))
         if (snap.exists() && !isCancelled) {
@@ -40,13 +45,16 @@ export function ParticipantProfileWorkspace() {
           if (data.photoURL || data.headshotUrl || data.avatarUrl) {
             setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
           }
+          if (data.activeAcquisition) {
+            setActiveAcquisition(data.activeAcquisition as GroundsActiveAcquisition)
+          }
         }
       } catch (err) {
         console.warn('Unable to load photo from participantProfiles:', err)
       }
     }
 
-    void loadPhoto()
+    void loadProfile()
     return () => {
       isCancelled = true
     }
@@ -57,9 +65,6 @@ export function ParticipantProfileWorkspace() {
   const title = 'Violinist • MYSO Alumni • Cohort Resident'
   const bio = 'Musician & civic space steward focused on residency.'
 
-  // Dynamic Avatar Photo: Priority 1: Google Auth photoURL (e.g. Google Login photo for ezra.haugabrooks@gmail.com)
-  // Priority 2: Firestore photoURL / headshotUrl
-  // Priority 3: High resolution default portrait
   const avatarUrl =
     user?.photoURL ||
     firestorePhoto ||
@@ -67,31 +72,45 @@ export function ParticipantProfileWorkspace() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#0f172a] font-sans selection:bg-slate-200">
-      {/* Main Container - No Global Header or Footer */}
+      {/* Main Container - Chrome Free */}
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile Info Header Section */}
-        <section className="flex flex-col gap-6 sm:flex-row sm:items-center">
-          {/* Avatar with Verified Badge Overlay */}
-          <div className="relative h-32 w-32 shrink-0">
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="h-32 w-32 rounded-full object-cover border-2 border-white shadow-md"
-            />
-            {/* Verified Badge Icon */}
-            <div className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#1e293b] text-white ring-4 ring-white shadow-sm">
-              <ShieldCheck className="h-5 w-5 text-sky-300" />
+        <section className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            {/* Avatar with Verified Badge Overlay */}
+            <div className="relative h-32 w-32 shrink-0">
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="h-32 w-32 rounded-full object-cover border-2 border-white shadow-md"
+              />
+              {/* Verified Badge Icon */}
+              <div className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#1e293b] text-white ring-4 ring-white shadow-sm">
+                <ShieldCheck className="h-5 w-5 text-sky-300" />
+              </div>
+            </div>
+
+            {/* User Details */}
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+                {displayName}
+              </h1>
+              <p className="text-sm text-slate-500 font-normal">{handle}</p>
+              <p className="pt-1 text-sm font-medium text-slate-700">{title}</p>
+              <p className="pt-2 text-sm text-slate-600 leading-relaxed max-w-xl">{bio}</p>
             </div>
           </div>
 
-          {/* User Details */}
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
-              {displayName}
-            </h1>
-            <p className="text-sm text-slate-500 font-normal">{handle}</p>
-            <p className="pt-1 text-sm font-medium text-slate-700">{title}</p>
-            <p className="pt-2 text-sm text-slate-600 leading-relaxed max-w-xl">{bio}</p>
+          {/* Quick Action Button for Property Matcher */}
+          <div className="shrink-0 pt-2 sm:pt-0">
+            <button
+              onClick={() => setMatcherOpen(true)}
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-900 shadow-sm transition"
+            >
+              <Plus className="h-4 w-4" />
+              {activeAcquisition ? 'Linked $1 Site Attached' : 'Claim $1 Homestead Site'}
+            </button>
           </div>
         </section>
 
@@ -293,6 +312,16 @@ export function ParticipantProfileWorkspace() {
           ) : null}
         </section>
       </main>
+
+      {/* Property Matcher Modal */}
+      <PropertyMatcherModal
+        isOpen={matcherOpen}
+        onClose={() => setMatcherOpen(false)}
+        onLinked={(newAcquisition) => {
+          setActiveAcquisition(newAcquisition)
+          setActiveDrawerTab('deed') // Automatically open deed tracker view
+        }}
+      />
     </div>
   )
 }
