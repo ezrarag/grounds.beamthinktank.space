@@ -20,6 +20,7 @@ import { resolvePortalPath } from '@/lib/resolvePortalPath'
 import { PATHWAY_META } from '@/lib/pathwayDashboards'
 import type { NGOConfig, PathwayRole } from '@/lib/ngoConfig'
 import { cn } from '@/lib/utils'
+import { PathToDeedTracker } from '@/components/profile/PathToDeedTracker'
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -154,6 +155,8 @@ export function MemberDashboard({
           )
         })}
       </div>
+
+      <PathToDeedTracker className="mt-6" />
     </section>
   )
 }

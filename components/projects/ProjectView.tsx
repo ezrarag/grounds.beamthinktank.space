@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowUpRight, CheckCircle2, Clock3, HardHat, Landmark, Scale, Sparkles, Users } from 'lucide-react'
 import { laborTypes, type EquitySlot, type Phase, type PhaseStatus, type RedevelopmentProjectBundle } from '@/lib/laborTypes'
+import { PropertyVisualizer } from '@/components/PropertyVisualizer'
 
 const projectStatusLabels = {
   feasibility: 'Feasibility',
@@ -202,6 +203,15 @@ export function ProjectView({ project, phases, equitySlots }: RedevelopmentProje
             </div>
           )}
         </div>
+      </section>
+
+      {/* Interactive 3D Neighborhood Visualizer Core */}
+      <section className="mt-8">
+        <PropertyVisualizer
+          address={project.address}
+          propertyId={project.assetId || project.slug}
+          propertyName={project.name}
+        />
       </section>
 
       <section className="mt-8 surface-panel p-7 shadow-grounds sm:p-8">

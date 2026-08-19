@@ -33,6 +33,7 @@ import { PortalShell } from '@/components/PortalShell'
 import { groundsConfig, type PathwayRole } from '@/lib/ngoConfig'
 import { usePortalAccess } from '@/lib/usePortalAccess'
 import { PATHWAY_DASHBOARDS, type DashboardTile } from '@/lib/pathwayDashboards'
+import { HousingPreferencesForm } from '@/components/profile/HousingPreferencesForm'
 
 const TILE_ICONS: Record<string, LucideIcon> = {
   'file-plus': FilePlus,
@@ -164,6 +165,12 @@ export function PathwayDashboard({ pathwayRole }: { pathwayRole: PathwayRole }) 
           <Tile key={tile.id} tile={tile} />
         ))}
       </div>
+
+      {activeRole === 'learn' && (
+        <div className="mt-8">
+          <HousingPreferencesForm />
+        </div>
+      )}
     </PortalShell>
   )
 }
