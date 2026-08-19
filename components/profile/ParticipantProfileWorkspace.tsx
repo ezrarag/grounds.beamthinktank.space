@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ChevronDown,
@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import { HousingPreferencesForm } from '@/components/profile/HousingPreferencesForm'
 import { PathToDeedTracker } from '@/components/profile/PathToDeedTracker'
@@ -23,51 +25,50 @@ type ActiveDrawerTab = 'goals' | 'deed' | 'safety' | null
 export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
   const [activeDrawerTab, setActiveDrawerTab] = useState<ActiveDrawerTab>(null)
+  const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
+
+  // Fetch avatar / headshot from Firestore participantProfiles if signed in
+  useEffect(() => {
+    if (!user || !db) return
+    let isCancelled = false
+
+    async function loadPhoto() {
+      try {
+        const snap = await getDoc(doc(db!, 'participantProfiles', user!.uid))
+        if (snap.exists() && !isCancelled) {
+          const data = snap.data()
+          if (data.photoURL || data.headshotUrl || data.avatarUrl) {
+            setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
+          }
+        }
+      } catch (err) {
+        console.warn('Unable to load photo from participantProfiles:', err)
+      }
+    }
+
+    void loadPhoto()
+    return () => {
+      isCancelled = true
+    }
+  }, [user])
 
   const displayName = user?.displayName || 'ezra haugabrooks'
   const handle = `@${(user?.email ? user.email.split('@')[0] : 'ezra.haugabrooks').toLowerCase()}`
   const title = 'Violinist • MYSO Alumni • Cohort Resident'
   const bio = 'Musician & civic space steward focused on residency.'
 
-  // Avatar URL with fallback
+  // Dynamic Avatar Photo: Priority 1: Google Auth photoURL (e.g. Google Login photo for ezra.haugabrooks@gmail.com)
+  // Priority 2: Firestore photoURL / headshotUrl
+  // Priority 3: High resolution default portrait
   const avatarUrl =
+    user?.photoURL ||
+    firestorePhoto ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#0f172a] font-sans selection:bg-slate-200">
-      {/* Top Header Navbar */}
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold tracking-wider text-[#0f172a] uppercase text-sm sm:text-base">
-              BEAM
-            </span>
-            <span className="text-slate-300 font-light">·</span>
-            <span className="font-normal tracking-widest text-slate-600 uppercase text-sm sm:text-base">
-              GROUNDS
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/portal"
-              className="text-xs font-medium text-slate-500 hover:text-slate-900 transition"
-            >
-              Portal Navigation
-            </Link>
-            <span className="text-slate-300">·</span>
-            <Link
-              href="/login"
-              className="rounded-full border border-slate-300 bg-slate-50 px-3.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
-            >
-              Account
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      {/* Main Container - No Global Header or Footer */}
+      <main className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile Info Header Section */}
         <section className="flex flex-col gap-6 sm:flex-row sm:items-center">
           {/* Avatar with Verified Badge Overlay */}
