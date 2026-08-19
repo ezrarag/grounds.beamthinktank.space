@@ -1,5 +1,5 @@
 import { ParticipantProfileWorkspace } from '@/components/profile/ParticipantProfileWorkspace'
 
-export default function ParticipantDashboardPage() {
+export default function ProfilePage() {
   return <ParticipantProfileWorkspace />
 }
