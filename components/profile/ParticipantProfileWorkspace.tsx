@@ -28,6 +28,7 @@ import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import { HousingPreferencesForm } from '@/components/profile/HousingPreferencesForm'
 import { PathToDeedTracker } from '@/components/profile/PathToDeedTracker'
 import { HousingSafetyNetCard } from '@/components/profile/HousingSafetyNetCard'
+import { RoleDiscoveryBoard } from '@/components/profile/RoleDiscoveryBoard'
 import {
   PropertyMatcherModal,
   CITY_HOMESTEAD_SITES,
@@ -40,7 +41,7 @@ import type {
   GroundsWorkRosterAttachment,
 } from '@/lib/types/groundsProfile'
 
-type ActiveDrawerTab = 'goals' | 'deed' | 'safety' | null
+type ActiveDrawerTab = 'goals' | 'deed' | 'roles' | 'safety' | null
 
 export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
@@ -544,6 +545,24 @@ export function ParticipantProfileWorkspace() {
               </button>
 
               <button
+                onClick={() => setActiveDrawerTab((prev) => (prev === 'roles' ? null : 'roles'))}
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                  activeDrawerTab === 'roles'
+                    ? 'border-[#1e293b] bg-[#1e293b] text-white'
+                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Compass className="h-3.5 w-3.5" />
+                Role Discovery Board
+                {activeDrawerTab === 'roles' ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              <button
                 onClick={() =>
                   setActiveDrawerTab((prev) => (prev === 'safety' ? null : 'safety'))
                 }
@@ -570,6 +589,7 @@ export function ParticipantProfileWorkspace() {
             <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               {activeDrawerTab === 'goals' && <HousingPreferencesForm />}
               {activeDrawerTab === 'deed' && <PathToDeedTracker />}
+              {activeDrawerTab === 'roles' && <RoleDiscoveryBoard />}
               {activeDrawerTab === 'safety' && <HousingSafetyNetCard />}
             </div>
           ) : null}
