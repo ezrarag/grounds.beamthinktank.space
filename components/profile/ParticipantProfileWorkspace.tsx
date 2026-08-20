@@ -3,19 +3,24 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
+  Bell,
   Building2,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Compass,
   CreditCard,
   Filter,
   Hammer,
+  HardHat,
   Home,
   LifeBuoy,
   MapPin,
   Plus,
   ShieldCheck,
   Sparkles,
+  Truck,
+  Wrench,
 } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -28,7 +33,12 @@ import {
   CITY_HOMESTEAD_SITES,
   type PropertySiteOption,
 } from '@/components/profile/PropertyMatcherModal'
-import type { GroundsActiveAcquisition, GroundsTargetLocation } from '@/lib/types/groundsProfile'
+import { PropertyWorkRosterModal } from '@/components/profile/PropertyWorkRosterModal'
+import type {
+  GroundsActiveAcquisition,
+  GroundsTargetLocation,
+  GroundsWorkRosterAttachment,
+} from '@/lib/types/groundsProfile'
 
 type ActiveDrawerTab = 'goals' | 'deed' | 'safety' | null
 
@@ -37,6 +47,7 @@ export function ParticipantProfileWorkspace() {
   const [activeDrawerTab, setActiveDrawerTab] = useState<ActiveDrawerTab>(null)
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
   const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
+  const [workRosterSites, setWorkRosterSites] = useState<GroundsWorkRosterAttachment[]>([])
   const [targetLocations, setTargetLocations] = useState<GroundsTargetLocation[]>([
     { city: 'Milwaukee', state: 'WI', priority: 1 },
     { city: 'Atlanta', state: 'GA', priority: 2 },
@@ -44,6 +55,8 @@ export function ParticipantProfileWorkspace() {
   const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('All')
   const [matcherOpen, setMatcherOpen] = useState(false)
   const [matcherCity, setMatcherCity] = useState<string | null>(null)
+  const [workModalOpen, setWorkModalOpen] = useState(false)
+  const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
 
   // Fetch participant profile from Firestore if signed in
   useEffect(() => {
@@ -60,6 +73,9 @@ export function ParticipantProfileWorkspace() {
           }
           if (data.activeAcquisition) {
             setActiveAcquisition(data.activeAcquisition as GroundsActiveAcquisition)
+          }
+          if (Array.isArray(data.workRosterSites)) {
+            setWorkRosterSites(data.workRosterSites as GroundsWorkRosterAttachment[])
           }
           if (Array.isArray(data.targetLocations) && data.targetLocations.length > 0) {
             setTargetLocations(data.targetLocations as GroundsTargetLocation[])
@@ -86,11 +102,9 @@ export function ParticipantProfileWorkspace() {
     firestorePhoto ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
 
-  // Unique target city names list
   const targetCityNames = Array.from(new Set(targetLocations.map((l) => l.city)))
   const targetNodesSummary = targetCityNames.map((c) => c.slice(0, 3).toUpperCase()).join(' • ')
 
-  // Filter properties by location
   const locationAssociatedProperties =
     selectedLocationFilter === 'All'
       ? CITY_HOMESTEAD_SITES
@@ -129,15 +143,27 @@ export function ParticipantProfileWorkspace() {
             </div>
           </div>
 
-          {/* Quick Action Button */}
-          <div className="shrink-0 pt-2 sm:pt-0">
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap gap-2 shrink-0 pt-2 sm:pt-0">
+            <button
+              onClick={() => {
+                setWorkModalTarget(null)
+                setWorkModalOpen(true)
+              }}
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 shadow-sm transition"
+            >
+              <HardHat className="h-3.5 w-3.5 text-slate-700" />
+              Attach to Site Work Roster
+            </button>
+
             <button
               onClick={() => {
                 setMatcherCity(null)
                 setMatcherOpen(true)
               }}
               type="button"
-              className="inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-900 shadow-sm transition"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-5 py-2 text-xs font-semibold text-white hover:bg-slate-900 shadow-sm transition"
             >
               <Plus className="h-4 w-4" />
               {activeAcquisition ? 'Linked $1 Site Attached' : 'Claim $1 Homestead Site'}
@@ -154,7 +180,6 @@ export function ParticipantProfileWorkspace() {
             </h2>
 
             <div className="relative my-6 flex items-center justify-center">
-              {/* Donut Progress Circle */}
               <svg className="h-36 w-36 -rotate-90 transform" viewBox="0 0 36 36">
                 <path
                   className="text-slate-200"
@@ -225,7 +250,6 @@ export function ParticipantProfileWorkspace() {
                   />
                 </svg>
 
-                {/* Pins for selected target locations */}
                 <div className="absolute left-[38%] top-[25%] flex flex-col items-center">
                   <div className="flex items-center gap-1 rounded-md bg-[#e11d48] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm">
                     <MapPin className="h-2.5 w-2.5" /> MKE
@@ -247,6 +271,98 @@ export function ParticipantProfileWorkspace() {
               <p className="mt-1 text-[11px] text-slate-400">{targetNodesSummary}</p>
             </div>
           </div>
+        </section>
+
+        {/* LAYER 2: Attached Site Work & Revitalization Roster Section */}
+        <section className="mt-12 space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <HardHat className="h-5 w-5 text-slate-800" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f172a]">
+                  My Site Work &amp; Revitalization Rosters
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Properties where your profile is attached to receive work shift notifications and offer skilled labor (moving, trade skills, acoustics, site stewardship).
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setWorkModalTarget(null)
+                setWorkModalOpen(true)
+              }}
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition"
+            >
+              <Plus className="h-3.5 w-3.5" /> Attach New Work Site
+            </button>
+          </div>
+
+          {workRosterSites.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {workRosterSites.map((attachment, idx) => (
+                <div
+                  key={`${attachment.assetId}-${idx}`}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="inline-block rounded-full bg-white px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-slate-700 border border-slate-200">
+                        {attachment.city || 'Revitalization Site'}
+                      </span>
+                      <h4 className="mt-1.5 text-sm font-bold text-[#0f172a]">
+                        {attachment.propertyName}
+                      </h4>
+                      <p className="text-xs text-slate-500">{attachment.address}</p>
+                    </div>
+                    {attachment.notifyOnWorkAvailable && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-bold text-sky-800">
+                        <Bell className="h-3 w-3 text-sky-600" /> Work Alerts Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 border-t border-slate-200 pt-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Your Selected Work Capacities:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {attachment.skillsOrRoles.map((role) => (
+                        <span
+                          key={role}
+                          className="rounded-md bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 border border-slate-200"
+                        >
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+              <Building2 className="mx-auto h-7 w-7 text-slate-400" />
+              <p className="mt-2 text-xs font-semibold text-slate-700">
+                You haven&apos;t attached your profile to any site work rosters yet.
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500 max-w-md mx-auto">
+                Attach your profile to any commercial or civic property in BEAM Grounds to offer skilled labor, moving assistance, or site stewardship and receive shift alerts when work is scheduled.
+              </p>
+              <button
+                onClick={() => {
+                  setWorkModalTarget(null)
+                  setWorkModalOpen(true)
+                }}
+                type="button"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#1e293b] px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 shadow-sm transition"
+              >
+                <HardHat className="h-3.5 w-3.5" /> Attach Profile to a Work Site
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Multi-Location Property Association & Feed Section */}
@@ -304,24 +420,33 @@ export function ParticipantProfileWorkspace() {
           {/* Location Associated Property Cards */}
           <div className="grid gap-4 sm:grid-cols-3">
             {locationAssociatedProperties.map((site) => {
-              const isLinked = activeAcquisition?.parcelId === site.parcelId
+              const isLinkedHomestead = activeAcquisition?.parcelId === site.parcelId
+              const isAttachedWorkRoster = workRosterSites.some((w) => w.assetId === site.id)
+
               return (
                 <div
                   key={site.id}
                   className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition ${
-                    isLinked
+                    isLinkedHomestead
                       ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/20'
+                      : isAttachedWorkRoster
+                      ? 'border-sky-500 bg-sky-50/40 ring-2 ring-sky-500/20'
                       : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                   }`}
                 >
                   <div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
                       <span className="inline-block rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-slate-700">
                         {site.city}, {site.state}
                       </span>
-                      {isLinked && (
+                      {isLinkedHomestead && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">
-                          <ShieldCheck className="h-3 w-3" /> Linked to Profile
+                          <ShieldCheck className="h-3 w-3" /> $1 Homestead
+                        </span>
+                      )}
+                      {isAttachedWorkRoster && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                          <HardHat className="h-3 w-3" /> Work Roster
                         </span>
                       )}
                     </div>
@@ -329,7 +454,7 @@ export function ParticipantProfileWorkspace() {
                     <p className="mt-1 text-xs text-slate-500">{site.address}</p>
                   </div>
 
-                  <div className="mt-4 border-t border-slate-200 pt-3">
+                  <div className="mt-4 border-t border-slate-200 pt-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono text-slate-600">
                       <span>TAXKEY: {site.parcelId}</span>
                       <span className="font-bold text-[#0f172a]">
@@ -337,16 +462,29 @@ export function ParticipantProfileWorkspace() {
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setMatcherCity(site.city)
-                        setMatcherOpen(true)
-                      }}
-                      type="button"
-                      className="mt-3 w-full rounded-xl bg-slate-800 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-900 transition"
-                    >
-                      {isLinked ? 'Manage Linked Property' : 'Link This Site'}
-                    </button>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          setWorkModalTarget(site)
+                          setWorkModalOpen(true)
+                        }}
+                        type="button"
+                        className="flex-1 rounded-xl border border-slate-300 bg-white py-1.5 text-center text-xs font-semibold text-slate-800 hover:bg-slate-50 transition"
+                      >
+                        {isAttachedWorkRoster ? 'Update Work Roster' : 'Attach Work Roster'}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setMatcherCity(site.city)
+                          setMatcherOpen(true)
+                        }}
+                        type="button"
+                        className="flex-1 rounded-xl bg-slate-800 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-900 transition"
+                      >
+                        {isLinkedHomestead ? 'Manage $1 Site' : '$1 Homestead'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -438,7 +576,7 @@ export function ParticipantProfileWorkspace() {
         </section>
       </main>
 
-      {/* Property Matcher Modal */}
+      {/* Property Matcher Modal ($1 Homestead) */}
       <PropertyMatcherModal
         isOpen={matcherOpen}
         initialCity={matcherCity}
@@ -446,6 +584,16 @@ export function ParticipantProfileWorkspace() {
         onLinked={(newAcquisition) => {
           setActiveAcquisition(newAcquisition)
           setActiveDrawerTab('deed')
+        }}
+      />
+
+      {/* Property Work Roster Modal (Layer 2 Revitalization Work) */}
+      <PropertyWorkRosterModal
+        isOpen={workModalOpen}
+        targetProperty={workModalTarget}
+        onClose={() => setWorkModalOpen(false)}
+        onAttached={(newAttachment) => {
+          setWorkRosterSites((prev) => [...prev.filter((w) => w.assetId !== newAttachment.assetId), newAttachment])
         }}
       />
     </div>

@@ -37,6 +37,16 @@ export interface GroundsActiveAcquisition {
   currentStatus?: string
 }
 
+export interface GroundsWorkRosterAttachment {
+  assetId: string
+  propertyName: string
+  address: string
+  city?: string
+  skillsOrRoles: string[]
+  notifyOnWorkAvailable: boolean
+  attachedAt: string
+}
+
 export interface GroundsProfile {
   uid?: string
   targetLocations?: GroundsTargetLocation[]
@@ -49,5 +59,6 @@ export interface GroundsProfile {
   }
   sweatEquityLedger?: GroundsSweatEquityLedger
   activeAcquisition?: GroundsActiveAcquisition
+  workRosterSites?: GroundsWorkRosterAttachment[]
   updatedAt?: any
 }
