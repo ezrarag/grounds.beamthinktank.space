@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type TouchEvent } from 'react'
 import {
+  Building2,
   ChevronLeft,
   ChevronRight,
   Handshake,
@@ -20,6 +21,7 @@ const ICONS: Record<string, LucideIcon> = {
   megaphone: Megaphone,
   handshake: Handshake,
   scale: Scale,
+  building: Building2,
 }
 
 const SWIPE_THRESHOLD = 40

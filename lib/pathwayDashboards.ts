@@ -29,6 +29,7 @@ export const PATHWAY_META: Record<PathwayRole, { route: string; navLabel: string
   teach: { route: '/portal/lead', navLabel: 'Your projects', icon: 'megaphone' },
   partner: { route: '/portal/financing', navLabel: 'Your pipeline', icon: 'handshake' },
   own: { route: '/portal/trust', navLabel: 'Your trust', icon: 'scale' },
+  institutional: { route: '/portal/suggest-site', navLabel: 'Institutional intake', icon: 'building' },
 }
 
 export const PATHWAY_ROUTES: Record<PathwayRole, string> = {
@@ -37,6 +38,7 @@ export const PATHWAY_ROUTES: Record<PathwayRole, string> = {
   teach: PATHWAY_META.teach.route,
   partner: PATHWAY_META.partner.route,
   own: PATHWAY_META.own.route,
+  institutional: PATHWAY_META.institutional.route,
 }
 
 /**
@@ -190,6 +192,14 @@ export const PATHWAY_DASHBOARDS: Record<PathwayRole, PathwayDashboard> = {
         primary: true,
       },
       {
+        id: 'suggest-building',
+        title: 'Suggest / Intact a site',
+        description: 'Submit an institutional site request or available property for review.',
+        icon: 'file-plus',
+        href: '/portal/suggest-site',
+        status: 'live',
+      },
+      {
         id: 'operating-agreements',
         title: 'Operating agreements',
         description: 'BEAM-as-operator agreements tied to your buildings.',
@@ -245,6 +255,38 @@ export const PATHWAY_DASHBOARDS: Record<PathwayRole, PathwayDashboard> = {
         description: 'The bylaws that keep buildings permanently community-held.',
         icon: 'scroll',
         status: 'stub',
+      },
+    ],
+  },
+  institutional: {
+    pathwayRole: 'institutional',
+    heading: 'Institutional & Division Intake',
+    subheading: 'Co-development workspace for university divisions, municipal agencies, and hospital systems.',
+    tiles: [
+      {
+        id: 'suggest-site-req',
+        title: 'Division Needs a Building',
+        description: 'Submit an institutional site acquisition or facility request.',
+        icon: 'file-plus',
+        href: '/portal/suggest-site',
+        status: 'live',
+        primary: true,
+      },
+      {
+        id: 'partner-building',
+        title: 'We Have a Building',
+        description: 'Co-develop an existing facility with BEAM as operator.',
+        icon: 'handshake',
+        href: '/portal/financing',
+        status: 'live',
+      },
+      {
+        id: 'view-pipeline',
+        title: 'View Active Pipeline',
+        description: 'Track acquisition maturation stages across active sites.',
+        icon: 'workflow',
+        href: '/portal/acquisition',
+        status: 'live',
       },
     ],
   },

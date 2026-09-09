@@ -61,7 +61,7 @@ const TILE_ICONS: Record<string, LucideIcon> = {
   scale: Scale,
 }
 
-const PATHWAY_SWITCHER_ROLES: PathwayRole[] = ['learn', 'earn', 'teach', 'partner', 'own']
+const PATHWAY_SWITCHER_ROLES: PathwayRole[] = ['learn', 'earn', 'teach', 'partner', 'own', 'institutional']
 
 function Tile({ tile }: { tile: DashboardTile }) {
   const Icon = TILE_ICONS[tile.icon] ?? FileText

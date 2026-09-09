@@ -6,7 +6,7 @@ export interface NGOTrack {
   outcomes: string[]
 }
 
-export type PathwayRole = 'learn' | 'earn' | 'teach' | 'partner' | 'own'
+export type PathwayRole = 'learn' | 'earn' | 'teach' | 'partner' | 'own' | 'institutional'
 
 export interface ChapterContext {
   id: string
@@ -152,6 +152,19 @@ const groundsPathways: Pathway[] = [
     loopLine: 'Trust ownership keeps buildings permanently community-held.',
     ctaLabel: 'Become a member',
     ctaHref: '/login',
+  },
+  {
+    role: 'institutional',
+    title: 'We are an institution / division',
+    icon: 'building',
+    description: {
+      uwm: 'University divisions, hospital systems, municipal agencies: request site acquisition or co-develop facilities with BEAM.',
+      mke: 'Institutions, schools, non-profits: bring site needs or assets to BEAM Grounds for development and workforce deployment.',
+    },
+    badges: ['Institutional', 'Site Request', 'Co-Development'],
+    loopLine: 'Institutional contracts fund cohort sweat equity and long-term community anchor assets.',
+    ctaLabel: 'Institutional Portal',
+    ctaHref: '/portal/suggest-site',
   },
 ]
 

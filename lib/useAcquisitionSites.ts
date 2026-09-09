@@ -119,6 +119,15 @@ export interface BeamAsset {
     bondFinancingEligible?: boolean
     notes?: string
   }
+  appraisalData?: {
+    estimatedValue: number
+    repairCostEstimate: number
+    lienStatus: string
+    source: string
+    confidence: number
+    updatedBy?: string
+    updatedAt?: string
+  }
   createdAt: string
   updatedAt: string
 }

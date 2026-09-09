@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { BeamAsset } from '@/lib/useAcquisitionSites'
+import { HoodCard } from '@/components/HoodCard'
 import { cn } from '@/lib/utils'
 
 type TabId = 'tenancy' | 'activation' | 'worklog' | 'parcel' | 'liability' | 'stewardship'
@@ -322,7 +323,42 @@ export function PublicPropertyDetailView({ site }: { site: BeamAsset }) {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          {/* Asset Maturation Stage Tracker */}
+          <div className="mt-6 rounded-[1.25rem] border border-[#10231b]/10 bg-white/80 p-5">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-xs uppercase tracking-wider text-[#10231b]/60">Stage Maturation Pipeline</p>
+              <span className="font-mono text-xs font-semibold text-[#88aa8f] bg-[#10231b] px-2.5 py-1 rounded-full">
+                Active: {site.acquisitionStage}
+              </span>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-1 overflow-x-auto pb-1">
+              {(['SIGNAL', 'CLAIM', 'ACCESS', 'STABILIZE', 'ACTIVATE', 'SECURE', 'TRANSFER'] as const).map((stageStep, idx) => {
+                const stages = ['SIGNAL', 'CLAIM', 'ACCESS', 'STABILIZE', 'ACTIVATE', 'SECURE', 'TRANSFER']
+                const currentIdx = stages.indexOf(site.acquisitionStage)
+                const isPassed = currentIdx >= idx
+                const isCurrent = currentIdx === idx
+
+                return (
+                  <div key={stageStep} className="flex-1 min-w-[70px] text-center">
+                    <div
+                      className={`h-2 rounded-full transition ${
+                        isCurrent
+                          ? 'bg-[#88aa8f] ring-2 ring-[#88aa8f]/40'
+                          : isPassed
+                          ? 'bg-[#10231b]/70'
+                          : 'bg-[#10231b]/14'
+                      }`}
+                    />
+                    <p className={`mt-2 font-mono text-[9px] uppercase tracking-wider ${isCurrent ? 'font-bold text-[#10231b]' : isPassed ? 'text-[#10231b]/75' : 'text-[#10231b]/35'}`}>
+                      {stageStep}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#10231b]/60">
                 <Coins className="h-4 w-4 text-grounds-clay" aria-hidden="true" />
@@ -347,24 +383,7 @@ export function PublicPropertyDetailView({ site }: { site: BeamAsset }) {
             </div>
 
             <div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#10231b]/60">
-                <Users className="h-4 w-4 text-grounds-clay" aria-hidden="true" />
-                Ways to earn
-              </div>
-              <div className="mt-3 space-y-3">
-                {earnLinks.length > 0 ? (
-                  earnLinks.map((link) => (
-                    <div key={`${link.ngoId}-${link.linkedAt}`} className="rounded-[14px] border border-[#10231b]/10 bg-white/70 p-4">
-                      <p className="text-sm font-semibold text-[#10231b]">{earnLabel(link.ngoId, link.ngoName)}</p>
-                      <p className="mt-2 text-xs text-[#10231b]/62">{link.ngoName} participants · Ongoing · Varies by sprint</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-[14px] border border-dashed border-[#10231b]/12 bg-white/50 p-4 text-sm text-[#10231b]/58">
-                    Public earning tracks will appear here when the site has a cohort structure attached.
-                  </div>
-                )}
-              </div>
+              <HoodCard siteName={site.name} />
             </div>
           </div>
         </div>
