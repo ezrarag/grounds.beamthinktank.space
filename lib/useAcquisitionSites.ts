@@ -5,6 +5,8 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { MediaItem } from '@/lib/media'
 
+import type { AcquisitionTrackId, ProductionLane } from '@/lib/tracks'
+
 export type BeamAssetStage =
   | 'SIGNAL'
   | 'CLAIM'
@@ -25,6 +27,8 @@ export interface BeamAsset {
   name: string
   address: string
   publicVisible?: boolean
+  acquisitionTrack?: AcquisitionTrackId
+  productionLane?: ProductionLane
   suggestedBy?: {
     name: string
     affiliation?: string
@@ -219,3 +223,53 @@ export function usePublicAcquisitionSites(): {
     error,
   }
 }
+
+/** Defaulting helper: existing assets without acquisitionTrack are treated as Track C. */
+export function getAssetTrack(asset: Partial<BeamAsset>): AcquisitionTrackId {
+  return asset.acquisitionTrack || 'C'
+}
+
+/** Enforces immutability of acquisitionTrack after SECURE stage. */
+export function isTrackImmutable(stage?: BeamAssetStage): boolean {
+  return stage === 'SECURE' || stage === 'TRANSFER'
+}
+
+/**
+ * Refactored stage maturation helper: evaluates mapped kernel signals,
+ * emits them non-blockingly, and updates Firestore.
+ */
+export async function advanceStage(
+  asset: BeamAsset,
+  targetStage: BeamAssetStage,
+  note?: string,
+): Promise<void> {
+  const { evaluateGroundsStageTransition } = await import('@/lib/kernel/rules/grounds')
+  const { emitSignal } = await import('@/lib/kernel/emit')
+
+  // 1. Evaluate and emit signals out-of-band
+  const signals = evaluateGroundsStageTransition(asset, targetStage)
+  for (const sig of signals) {
+    void emitSignal(sig)
+  }
+
+  // 2. Update Firestore if configured
+  if (db) {
+    const { doc, updateDoc } = await import('firebase/firestore')
+    const assetRef = doc(db, 'beamAssets', asset.id)
+    const newHistory = [
+      ...(asset.stageHistory || []),
+      {
+        stage: targetStage,
+        timestamp: new Date().toISOString(),
+        note: note || `Advanced to ${targetStage} stage.`,
+      },
+    ]
+    await updateDoc(assetRef, {
+      acquisitionStage: targetStage,
+      stageHistory: newHistory,
+      updatedAt: new Date().toISOString(),
+    })
+  }
+}
+
+

@@ -1,5 +1,6 @@
-import { PathwayDashboard } from '@/components/PathwayDashboard'
+import { InvestorDashboard } from '@/components/dashboard/InvestorDashboard'
 
 export default function PortalTrustPage() {
-  return <PathwayDashboard pathwayRole="own" />
+  return <InvestorDashboard />
 }
+

@@ -54,6 +54,7 @@ export function ParticipantProfileWorkspace() {
     { city: 'Atlanta', state: 'GA', priority: 2 },
   ])
   const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('All')
+  const [propertySearchQuery, setPropertySearchQuery] = useState<string>('')
   const [matcherOpen, setMatcherOpen] = useState(false)
   const [matcherCity, setMatcherCity] = useState<string | null>(null)
   const [workModalOpen, setWorkModalOpen] = useState(false)
@@ -106,12 +107,17 @@ export function ParticipantProfileWorkspace() {
   const targetCityNames = Array.from(new Set(targetLocations.map((l) => l.city)))
   const targetNodesSummary = targetCityNames.map((c) => c.slice(0, 3).toUpperCase()).join(' • ')
 
-  const locationAssociatedProperties =
-    selectedLocationFilter === 'All'
-      ? CITY_HOMESTEAD_SITES
-      : CITY_HOMESTEAD_SITES.filter(
-          (s) => s.city.toLowerCase() === selectedLocationFilter.toLowerCase(),
-        )
+  const locationAssociatedProperties = CITY_HOMESTEAD_SITES.filter((s) => {
+    const matchesCity =
+      selectedLocationFilter === 'All' ||
+      s.city.toLowerCase() === selectedLocationFilter.toLowerCase()
+    const matchesQuery =
+      !propertySearchQuery ||
+      s.name.toLowerCase().includes(propertySearchQuery.toLowerCase()) ||
+      s.address.toLowerCase().includes(propertySearchQuery.toLowerCase()) ||
+      s.parcelId.toLowerCase().includes(propertySearchQuery.toLowerCase())
+    return matchesCity && matchesQuery
+  })
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#0f172a] font-sans selection:bg-slate-200">
@@ -146,6 +152,14 @@ export function ParticipantProfileWorkspace() {
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap gap-2 shrink-0 pt-2 sm:pt-0">
+            <Link
+              href="/portal/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-sm transition"
+            >
+              <Compass className="h-3.5 w-3.5 text-slate-600" />
+              Change My Pathway
+            </Link>
+
             <button
               onClick={() => {
                 setWorkModalTarget(null)
@@ -381,19 +395,30 @@ export function ParticipantProfileWorkspace() {
               </p>
             </div>
 
-            {/* City Location Filter Pills */}
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setSelectedLocationFilter('All')}
-                type="button"
-                className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
-                  selectedLocationFilter === 'All'
-                    ? 'bg-[#1e293b] text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                All Nodes ({CITY_HOMESTEAD_SITES.length})
-              </button>
+            {/* Property Search & City Location Filter Pills */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[200px]">
+                <input
+                  type="text"
+                  value={propertySearchQuery}
+                  onChange={(e) => setPropertySearchQuery(e.target.value)}
+                  placeholder="Search address or parcel..."
+                  className="w-full rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1 text-xs font-medium text-slate-800 focus:border-slate-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setSelectedLocationFilter('All')}
+                  type="button"
+                  className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
+                    selectedLocationFilter === 'All'
+                      ? 'bg-[#1e293b] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  All Nodes ({CITY_HOMESTEAD_SITES.length})
+                </button>
 
               {targetCityNames.map((city) => {
                 const isSelected = selectedLocationFilter.toLowerCase() === city.toLowerCase()
@@ -415,6 +440,7 @@ export function ParticipantProfileWorkspace() {
                   </button>
                 )
               })}
+              </div>
             </div>
           </div>
 

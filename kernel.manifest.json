@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "divisions": [
+    "health",
+    "law",
+    "forge",
+    "environment",
+    "transportation",
+    "business",
+    "grounds"
+  ],
+  "routingRules": [
+    {
+      "ruleId": "grounds-claim-law",
+      "entityType": "BeamAsset",
+      "event": "stage:CLAIM",
+      "targetDivision": "law",
+      "urgency": "standard",
+      "blocking": false
+    },
+    {
+      "ruleId": "grounds-access-forge",
+      "entityType": "BeamAsset",
+      "event": "stage:ACCESS",
+      "targetDivision": "forge",
+      "urgency": "critical",
+      "blocking": true
+    },
+    {
+      "ruleId": "grounds-trackd-health",
+      "entityType": "BeamAsset",
+      "event": "trackD:ACCESS",
+      "targetDivision": "health",
+      "urgency": "blocking",
+      "blocking": true
+    },
+    {
+      "ruleId": "grounds-trackd-law",
+      "entityType": "BeamAsset",
+      "event": "trackD:ACCESS",
+      "targetDivision": "law",
+      "urgency": "blocking",
+      "blocking": true
+    },
+    {
+      "ruleId": "grounds-secure-law",
+      "entityType": "BeamAsset",
+      "event": "stage:SECURE",
+      "targetDivision": "law",
+      "urgency": "blocking",
+      "blocking": true
+    }
+  ]
+}
