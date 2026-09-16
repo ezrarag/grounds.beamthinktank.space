@@ -226,7 +226,7 @@ export function ParticipantProfileWorkspace() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [extractedCoords, setExtractedCoords] = useState<{ lat: number; lng: number } | null>(null)
 
-  // 300ms Debounce effect for rich address & city autocomplete typeahead
+  // 300ms Debounce effect for rich address & city autocomplete typeahead (Mapbox + Photon + Local Dictionary)
   useEffect(() => {
     const q = commandSearchInput.trim().toLowerCase()
     if (!q || q.length < 2) {
@@ -235,18 +235,88 @@ export function ParticipantProfileWorkspace() {
       return
     }
 
-    const timer = setTimeout(() => {
-      const matches = CITY_NODE_DICTIONARY.filter(
+    let isCancelled = false
+
+    const timer = setTimeout(async () => {
+      // 1. Initial match against local dictionary for instant response
+      const localMatches = CITY_NODE_DICTIONARY.filter(
         (item) =>
           item.label.toLowerCase().includes(q) ||
           item.city.toLowerCase().includes(q) ||
           item.state.toLowerCase().includes(q)
       )
-      setTypeaheadSuggestions(matches)
-      setShowSuggestions(matches.length > 0)
-    }, 200)
 
-    return () => clearTimeout(timer)
+      let apiSuggestions: typeof CITY_NODE_DICTIONARY = []
+
+      // 2. Fetch live Mapbox Geocoding or Photon suggestions for any typed address
+      try {
+        const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+        if (mapboxToken) {
+          const mapboxRes = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${mapboxToken}&autocomplete=true&types=address,place,locality,neighborhood&country=us`
+          )
+          if (mapboxRes.ok) {
+            const data = await mapboxRes.json()
+            if (data.features && Array.isArray(data.features)) {
+              apiSuggestions = data.features.map((feat: any) => {
+                const isPlace = feat.place_type?.includes('place') || feat.place_type?.includes('locality')
+                return {
+                  label: feat.place_name,
+                  city: feat.text || q,
+                  state: feat.context?.find((c: any) => c.id.startsWith('region'))?.text || '',
+                  coords: { lat: feat.center[1], lng: feat.center[0] },
+                  type: isPlace ? ('city' as const) : ('address' as const),
+                }
+              })
+            }
+          }
+        }
+        
+        // If Mapbox token is absent or returns 0 results, query open Photon geocoder fallback
+        if (apiSuggestions.length === 0) {
+          const photonRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5`)
+          if (photonRes.ok) {
+            const data = await photonRes.json()
+            if (data.features && Array.isArray(data.features)) {
+              apiSuggestions = data.features.map((feat: any) => {
+                const props = feat.properties || {}
+                const nameStr = [props.housenumber, props.street, props.city, props.state]
+                  .filter(Boolean)
+                  .join(' ') || props.name || q
+                const isCity = !props.street
+                return {
+                  label: nameStr,
+                  city: props.city || props.name || q,
+                  state: props.state || '',
+                  coords: { lat: feat.geometry.coordinates[1], lng: feat.geometry.coordinates[0] },
+                  type: isCity ? ('city' as const) : ('address' as const),
+                }
+              })
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Geocoding typeahead search notice:', err)
+      }
+
+      if (isCancelled) return
+
+      // Merge local dictionary matches and live API results, removing duplicates
+      const combined = [...localMatches]
+      for (const item of apiSuggestions) {
+        if (!combined.some((c) => c.label.toLowerCase() === item.label.toLowerCase())) {
+          combined.push(item)
+        }
+      }
+
+      setTypeaheadSuggestions(combined.slice(0, 8))
+      setShowSuggestions(combined.length > 0)
+    }, 250)
+
+    return () => {
+      isCancelled = true
+      clearTimeout(timer)
+    }
   }, [commandSearchInput])
 
   // Save search entry to Firebase Firestore & local state history
@@ -504,6 +574,51 @@ export function ParticipantProfileWorkspace() {
             {headerMenuOpen && (
               <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] p-2 shadow-2xl space-y-1">
                 <div className="px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#c8b97a]">
+                  Primary Console Views
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('search')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'search' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🔍</span> Parcel Search Engine
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('homestead')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'homestead' ? 'bg-[#88aa8f]/20 text-[#88aa8f] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>📍</span> Claim $1 Homestead Site
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('squads')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'squads' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>⚡</span> Live Opportunities &amp; Squads
+                </button>
+
+                <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
+
+                <div className="px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-[#88aa8f]">
                   Stage Panels &amp; Secondary Views
                 </div>
 
@@ -544,47 +659,6 @@ export function ParticipantProfileWorkspace() {
                   }`}
                 >
                   <span>⚖️</span> Stewardship &amp; Compliance
-                </button>
-
-                <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConsoleView('squads')
-                    setHeaderMenuOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'squads' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
-                  }`}
-                >
-                  <span>⚡</span> Live Opportunities &amp; Squads
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConsoleView('homestead')
-                    setHeaderMenuOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'homestead' ? 'bg-[#88aa8f]/20 text-[#88aa8f] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
-                  }`}
-                >
-                  <span>📍</span> Claim $1 Homestead Site
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConsoleView('search')
-                    setHeaderMenuOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'search' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
-                  }`}
-                >
-                  <span>🔍</span> Parcel Search Engine
                 </button>
               </div>
             )}
@@ -711,37 +785,6 @@ export function ParticipantProfileWorkspace() {
                     {commandSearchError && (
                       <p className="text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
                     )}
-
-                    {/* Quick-Link Address & City Pills */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[rgba(237,243,234,0.5)]">
-                        Quick City &amp; Parcel Nodes:
-                      </span>
-                      {[
-                        { label: 'Waukesha, WI', city: true, coords: { lat: 43.0117, lng: -88.2314 } },
-                        { label: 'Kissimmee, FL', city: true, coords: { lat: 28.2919, lng: -81.4076 } },
-                        { label: '639 N 25th St, Milwaukee, WI', city: false },
-                        { label: '450 Auburn Ave NE, Atlanta, GA', city: false },
-                      ].map((pill) => (
-                        <button
-                          key={pill.label}
-                          onClick={() => {
-                            if (pill.city) {
-                              setUserCoords(pill.coords!)
-                              setSearchMode('map')
-                              setCommandSearchInput(pill.label)
-                              void recordSearchHistory(pill.label, 'map')
-                            } else {
-                              handleExecuteParcelSearch(undefined, pill.label)
-                            }
-                          }}
-                          type="button"
-                          className="rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.03] px-3 py-1 text-xs font-medium text-[#c8b97a] hover:bg-white/[0.08] hover:text-white transition shadow-sm"
-                        >
-                          {pill.city ? '🌆' : '📍'} {pill.label}
-                        </button>
-                      ))}
-                    </div>
                   </form>
                 )}
 

@@ -246,22 +246,9 @@ export function InteractivePinMapCanvas({
         {/* Action Buttons: Inspect Local Parcel & External Maps */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(237,243,234,0.08)]">
           <div className="flex items-center gap-2">
-            <a
-              href={`https://maps.apple.com/?q=${currentCoords.lat},${currentCoords.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:text-white transition"
-            >
-              🍎 Open in Apple Maps <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${currentCoords.lat},${currentCoords.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-full border border-emerald-800/50 bg-emerald-950/60 px-3 py-1 text-xs font-semibold text-emerald-200 hover:border-emerald-600 hover:text-white transition"
-            >
-              🌐 Open in Google Maps <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
+            <span className="font-mono text-[10px] text-[rgba(237,243,234,0.6)]">
+              📍 Pin Drag / Tap to Inspect Coordinates
+            </span>
           </div>
 
           <button

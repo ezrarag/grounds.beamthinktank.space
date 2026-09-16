@@ -20,6 +20,7 @@ import { db } from '@/lib/firebase'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import type { ArchitecturalSpecsResult } from '@/app/api/architecture/specs/route'
 import { AcquisitionTeamModule } from '@/components/profile/AcquisitionTeamModule'
+import { PropertyVisualizer } from '@/components/PropertyVisualizer'
 
 interface ParcelIntelligenceWorkspaceModalProps {
   parcel: ParcelResult | null
@@ -238,22 +239,16 @@ export function ParcelIntelligenceWorkspaceModal({
                 </span>
               </div>
 
-              {/* Synthetic Mapbox / Satellite Polygon Mock */}
-              <div className="relative h-48 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
-                <svg className="h-full w-full opacity-60" viewBox="0 0 300 200">
-                  <rect width="300" height="200" fill="#0f172a" />
-                  <path d="M20 30 L280 20 L270 180 L30 170 Z" fill="#1e293b" stroke="#334155" strokeWidth="2" />
-                  {/* Highlighted Parcel Polygon */}
-                  <polygon points="90,60 210,50 200,140 80,130" fill="#0284c7" fillOpacity="0.3" stroke="#38bdf8" strokeWidth="2.5" strokeDasharray="4 2" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center pointer-events-none">
-                  <span className="rounded bg-black/60 px-2 py-1 font-mono text-xs font-bold text-white backdrop-blur-sm border border-slate-700">
-                    {parcel.address}
-                  </span>
-                  <span className="mt-1 text-[10px] font-mono text-sky-300">
-                    Polygon Parcel Boundary Verified
-                  </span>
-                </div>
+              {/* Live Interactive Mapbox / Satellite Parcel Boundary Map */}
+              <div className="relative h-56 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                <PropertyVisualizer
+                  address={parcel.address}
+                  propertyId={parcel.parcelId}
+                  lat={parcel.lat}
+                  lng={parcel.lng}
+                  compact={true}
+                  className="h-full w-full"
+                />
               </div>
 
               {/* Zoning & Lot Intelligence Badges */}
