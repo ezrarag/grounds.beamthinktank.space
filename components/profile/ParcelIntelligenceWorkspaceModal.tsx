@@ -129,10 +129,10 @@ export function ParcelIntelligenceWorkspaceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative my-8 w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-6">
-        {/* Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-2 sm:p-6 backdrop-blur-md flex justify-center items-start sm:items-center">
+      <div className="relative my-2 sm:my-6 w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        {/* Sticky Header Bar */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Compass className="h-6 w-6 text-slate-900" />
@@ -163,12 +163,16 @@ export function ParcelIntelligenceWorkspaceModal({
             <button
               onClick={onClose}
               type="button"
-              className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+              className="rounded-full p-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 transition font-bold"
+              title="Close Workspace Modal"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
+
+        {/* Scrollable Body Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ WebkitOverflowScrolling: 'touch' }}>
 
         {tabledSuccess && (
           <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-1">
@@ -394,11 +398,10 @@ export function ParcelIntelligenceWorkspaceModal({
               )}
             </div>
 
-            {/* Integrated Acquisition & Team Assembly Module */}
-            <AcquisitionTeamModule parcel={targetParcel} user={user} />
           </div>
         </div>
         )}
+        </div>
       </div>
     </div>
   )

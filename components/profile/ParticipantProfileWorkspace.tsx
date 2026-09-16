@@ -30,9 +30,12 @@ import {
   Home,
   User,
   MessageSquare,
+  LogOut,
+  History,
 } from 'lucide-react'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
+import { signOut } from 'firebase/auth'
+import { db, auth } from '@/lib/firebase'
 import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import {
   PropertyMatcherModal,
@@ -50,7 +53,7 @@ import { AssetInterestModal } from '@/components/profile/AssetInterestModal'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
 import { LiveOpportunityFeed } from '@/components/profile/LiveOpportunityFeed'
-import { EditProfileModal, type UserTargetRegion } from '@/components/profile/EditProfileModal'
+import { EditProfileModal, type UserTargetRegion, type SearchHistoryItem } from '@/components/profile/EditProfileModal'
 import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
 import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
 
@@ -102,6 +105,20 @@ const COMPLIANCE_ITEMS: ComplianceItem[] = [
   },
 ]
 
+// Built-in dictionary of City Nodes & Real Addresses for autocomplete
+const CITY_NODE_DICTIONARY = [
+  { label: 'Waukesha, WI', city: 'Waukesha', state: 'WI', coords: { lat: 43.0117, lng: -88.2314 }, type: 'city' },
+  { label: 'Kissimmee, FL', city: 'Kissimmee', state: 'FL', coords: { lat: 28.2919, lng: -81.4076 }, type: 'city' },
+  { label: 'Milwaukee, WI', city: 'Milwaukee', state: 'WI', coords: { lat: 43.0389, lng: -87.9065 }, type: 'city' },
+  { label: 'Atlanta, GA', city: 'Atlanta', state: 'GA', coords: { lat: 33.749, lng: -84.388 }, type: 'city' },
+  { label: 'Tampa, FL', city: 'Tampa', state: 'FL', coords: { lat: 27.9506, lng: -82.4572 }, type: 'city' },
+  { label: 'Chicago, IL', city: 'Chicago', state: 'IL', coords: { lat: 41.8781, lng: -87.6298 }, type: 'city' },
+  { label: 'New York, NY', city: 'New York', state: 'NY', coords: { lat: 40.7128, lng: -74.006 }, type: 'city' },
+  { label: '639 N 25th St, Milwaukee, WI', city: 'Milwaukee', state: 'WI', coords: { lat: 43.0396, lng: -87.945 }, type: 'address' },
+  { label: '450 Auburn Ave NE, Atlanta, GA', city: 'Atlanta', state: 'GA', coords: { lat: 33.7554, lng: -84.3725 }, type: 'address' },
+  { label: '1901 E 7th Ave, Tampa, FL', city: 'Tampa', state: 'FL', coords: { lat: 27.9602, lng: -82.4368 }, type: 'address' },
+]
+
 export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
   const { sites: liveAssets } = useAcquisitionSites()
@@ -115,26 +132,21 @@ export function ParticipantProfileWorkspace() {
   const [userHandle, setUserHandle] = useState<string | null>(null)
   const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
   const [workRosterSites, setWorkRosterSites] = useState<GroundsWorkRosterAttachment[]>([])
-  
-  const [editProfileOpen, setEditProfileOpen] = useState(false)
-  const [matcherOpen, setMatcherOpen] = useState(false)
-  const [matcherCity, setMatcherCity] = useState<string | null>(null)
-  const [workModalOpen, setWorkModalOpen] = useState(false)
-  const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
-  const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
 
-  // Header Dropdown Menu state
+  // Avatar & Header Menus state
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 
-  // Developer Feedback state
+  // Developer Feedback & Search History state
   const [developerFeedbackEnabled, setDeveloperFeedbackEnabled] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([])
   
   const [commandSearchInput, setCommandSearchInput] = useState('')
   const [searchingParcel, setSearchingParcel] = useState(false)
   const [searchedParcelResult, setSearchedParcelResult] = useState<ParcelResult | null>(null)
   const [commandSearchError, setCommandSearchError] = useState<string | null>(null)
-  const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<string[]>([])
+  const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<typeof CITY_NODE_DICTIONARY>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Geolocation state
@@ -146,6 +158,13 @@ export function ParticipantProfileWorkspace() {
   const [civicSyncing, setCivicSyncing] = useState(false)
   const [civicDataCount, setCivicDataCount] = useState<number | null>(null)
   const [civicSourceLabel, setCivicSourceLabel] = useState<string | null>(null)
+
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [matcherOpen, setMatcherOpen] = useState(false)
+  const [matcherCity, setMatcherCity] = useState<string | null>(null)
+  const [workModalOpen, setWorkModalOpen] = useState(false)
+  const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
+  const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
 
   function requestUserLocation() {
     if (typeof window === 'undefined' || !navigator.geolocation) {
@@ -206,31 +225,52 @@ export function ParticipantProfileWorkspace() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [extractedCoords, setExtractedCoords] = useState<{ lat: number; lng: number } | null>(null)
 
-  // 300ms Debounce effect for address autocomplete typeahead
+  // 300ms Debounce effect for rich address & city autocomplete typeahead
   useEffect(() => {
-    if (!commandSearchInput.trim() || commandSearchInput.trim().length < 2) {
+    const q = commandSearchInput.trim().toLowerCase()
+    if (!q || q.length < 2) {
       setTypeaheadSuggestions([])
       setShowSuggestions(false)
       return
     }
 
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/parcel?typeahead=true&q=${encodeURIComponent(commandSearchInput.trim())}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data.suggestions)) {
-            setTypeaheadSuggestions(data.suggestions)
-            setShowSuggestions(data.suggestions.length > 0)
-          }
-        }
-      } catch {
-        // Silently ignore typeahead network failures
-      }
-    }, 300)
+    const timer = setTimeout(() => {
+      const matches = CITY_NODE_DICTIONARY.filter(
+        (item) =>
+          item.label.toLowerCase().includes(q) ||
+          item.city.toLowerCase().includes(q) ||
+          item.state.toLowerCase().includes(q)
+      )
+      setTypeaheadSuggestions(matches)
+      setShowSuggestions(matches.length > 0)
+    }, 200)
 
     return () => clearTimeout(timer)
   }, [commandSearchInput])
+
+  // Save search entry to Firebase Firestore & local state history
+  async function recordSearchHistory(queryStr: string, mode: SearchMode, parcelId?: string) {
+    const newItem: SearchHistoryItem = {
+      id: `srch-${Date.now()}`,
+      query: queryStr,
+      mode,
+      timestamp: new Date().toISOString(),
+    }
+
+    setSearchHistory((prev) => [newItem, ...prev.filter((h) => h.query !== queryStr)].slice(0, 15))
+
+    if (user?.uid && db) {
+      try {
+        await setDoc(
+          doc(db, 'participantProfiles', user.uid),
+          { searchHistory: arrayUnion(newItem) },
+          { merge: true }
+        )
+      } catch (err) {
+        console.warn('Unable to record search history to Firestore:', err)
+      }
+    }
+  }
 
   async function handleExecuteParcelSearch(e?: React.FormEvent, overrideAddress?: string, coords?: { lat: number; lng: number }) {
     if (e) e.preventDefault()
@@ -240,20 +280,22 @@ export function ParticipantProfileWorkspace() {
 
     try {
       let url = ''
+      const queryText = (overrideAddress || commandSearchInput).trim() || (coords ? `GPS ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : 'Current Location')
+
       if (coords) {
         url = `/api/parcel?lat=${coords.lat}&lng=${coords.lng}`
       } else {
-        const query = (overrideAddress || commandSearchInput).trim()
-        if (!query) return
-        setCommandSearchInput(query)
+        if (!queryText) return
+        setCommandSearchInput(queryText)
         setShowSuggestions(false)
-        url = `/api/parcel?q=${encodeURIComponent(query)}`
+        url = `/api/parcel?q=${encodeURIComponent(queryText)}`
       }
 
       const res = await fetch(url)
       if (res.ok) {
         const data = (await res.json()) as ParcelResult
         setSearchedParcelResult(data)
+        void recordSearchHistory(queryText, searchMode, data.parcelId)
       } else {
         setCommandSearchError('Unable to query parcel endpoint.')
       }
@@ -264,7 +306,7 @@ export function ParticipantProfileWorkspace() {
     }
   }
 
-  // Handle Photo EXIF Extraction
+  // Handle Photo EXIF Extraction & Auto-Open Intelligence Workspace Modal
   function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -283,8 +325,24 @@ export function ParticipantProfileWorkspace() {
 
       setExtractedCoords({ lat, lng })
       setPhotoParsing(false)
+      
+      // Auto-open Parcel Intelligence Workspace Modal for photo coordinates
+      void handleExecuteParcelSearch(undefined, `Photo Geotag (${lat.toFixed(4)}, ${lng.toFixed(4)})`, { lat, lng })
     }
     reader.readAsDataURL(file)
+  }
+
+  // Handle Logout
+  async function handleSignOut() {
+    try {
+      if (auth) {
+        await signOut(auth)
+      }
+      setAvatarMenuOpen(false)
+      window.location.reload()
+    } catch (err) {
+      console.warn('Sign out error:', err)
+    }
   }
 
   // Fetch participant profile from Firestore if signed in
@@ -302,6 +360,9 @@ export function ParticipantProfileWorkspace() {
           if (data.preferredRegion) setUserRegion(data.preferredRegion as UserTargetRegion)
           if (typeof data.developerFeedbackEnabled === 'boolean') {
             setDeveloperFeedbackEnabled(data.developerFeedbackEnabled)
+          }
+          if (Array.isArray(data.searchHistory)) {
+            setSearchHistory(data.searchHistory as SearchHistoryItem[])
           }
           if (data.photoURL || data.headshotUrl || data.avatarUrl) {
             setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
@@ -349,17 +410,56 @@ export function ParticipantProfileWorkspace() {
         
         {/* 1. IDENTITY STRIP & REFACTORED CLEAN HEADER */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[rgba(237,243,234,0.12)] pb-6">
-          {/* Avatar + Name + Interactive Edit Profile Pill */}
+          {/* Avatar + Logout Dropdown + Name + Edit Profile Pill */}
           <div className="flex items-center gap-4">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1b3327] border border-[#88aa8f]/40 font-mono text-sm font-bold text-[#c8b97a] shadow-inner">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="h-full w-full rounded-full object-cover" />
-              ) : (
-                <span>{initials}</span>
+            {/* Clickable Avatar Trigger for Logout */}
+            <div className="relative">
+              <button
+                onClick={() => setAvatarMenuOpen((prev) => !prev)}
+                type="button"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1b3327] border border-[#88aa8f]/40 font-mono text-sm font-bold text-[#c8b97a] shadow-inner hover:border-[#c8b97a] transition"
+                title="Account & Sign Out Options"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <span>{initials}</span>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#102119] text-[#88aa8f]">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                </div>
+              </button>
+
+              {/* Avatar Dropdown Menu with Logout Button */}
+              {avatarMenuOpen && (
+                <div className="absolute left-0 top-14 z-50 w-56 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] p-3 shadow-2xl space-y-2">
+                  <div className="border-b border-[rgba(237,243,234,0.1)] pb-2">
+                    <p className="text-xs font-bold text-[#edf3ea] truncate">{displayName}</p>
+                    <p className="text-[10px] text-[rgba(237,243,234,0.6)] font-mono">{userHandle || '@ezra.haugabrooks'}</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setEditProfileOpen(true)
+                      setAvatarMenuOpen(false)
+                    }}
+                    type="button"
+                    className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[rgba(237,243,234,0.85)] hover:bg-[#102119] hover:text-[#edf3ea] transition text-left"
+                  >
+                    <Settings className="h-3.5 w-3.5 text-[#88aa8f]" />
+                    Edit Account Preferences
+                  </button>
+
+                  <button
+                    onClick={handleSignOut}
+                    type="button"
+                    className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 bg-rose-950/40 border border-rose-800/40 hover:bg-rose-950/80 transition text-left"
+                  >
+                    <LogOut className="h-3.5 w-3.5 text-rose-400" />
+                    Sign Out / Logout
+                  </button>
+                </div>
               )}
-              <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#102119] text-[#88aa8f]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-              </div>
             </div>
 
             <div>
@@ -534,7 +634,7 @@ export function ParticipantProfileWorkspace() {
 
                   <h2 className="font-serif text-3xl font-medium tracking-tight text-[#edf3ea] sm:text-4xl pt-1">
                     {searchMode === 'address'
-                      ? 'Search Any Parcel or Site Worldwide'
+                      ? 'Search Any Parcel or City Node Worldwide'
                       : searchMode === 'map'
                       ? 'Embedded Interactive Google / Apple Maps Viewer'
                       : 'Take Photo or Upload EXIF Geotag Image'}
@@ -542,14 +642,14 @@ export function ParticipantProfileWorkspace() {
 
                   <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
                     {searchMode === 'address'
-                      ? 'Enter any street address, tax key, or site name to run instant Regrid parcel boundary lookup, zoning intelligence, financial pro-forma, and team assembly.'
+                      ? 'Type any street address (e.g. 639 N 25th St) or city name (e.g. Waukesha, Kissimmee) to auto-search parcels or switch to Interactive Map.'
                       : searchMode === 'map'
-                      ? 'Pan, zoom, and select locations directly inside the embedded Google Maps interactive viewer or open deep links.'
-                      : 'Take a photo directly with your camera or upload a site image. Auto-extract GPS metadata coordinates to locate the parcel.'}
+                      ? 'Pan, zoom, and tap any location on the map to inspect real estate intelligence and 0.5-mile radius off-market records.'
+                      : 'Snap or upload a photo of any lot. Auto-extract GPS coordinates to launch parcel underwriting.'}
                   </p>
                 </div>
 
-                {/* MODE 1: Address Search Form */}
+                {/* MODE 1: Address & City Search Form */}
                 {searchMode === 'address' && (
                   <form onSubmit={handleExecuteParcelSearch} className="max-w-2xl mx-auto space-y-3">
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -559,21 +659,38 @@ export function ParticipantProfileWorkspace() {
                           value={commandSearchInput}
                           onChange={(e) => setCommandSearchInput(e.target.value)}
                           onFocus={() => setShowSuggestions(typeaheadSuggestions.length > 0)}
-                          placeholder="Enter street address, city, or TaxKey (e.g. 639 N 25th St)..."
+                          placeholder="Enter address or city (e.g. Waukesha, Kissimmee, 639 N 25th St)..."
                           className="w-full rounded-full border border-[rgba(237,243,234,0.18)] bg-[#102119]/80 px-5 py-3 text-sm text-[#edf3ea] placeholder:text-[rgba(237,243,234,0.4)] focus:border-[#88aa8f] focus:outline-none shadow-inner"
                         />
 
-                        {/* Autocomplete Suggestions Menu */}
+                        {/* Autocomplete Suggestions Menu for Cities & Addresses */}
                         {showSuggestions && typeaheadSuggestions.length > 0 && (
                           <div className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] shadow-2xl text-left">
                             {typeaheadSuggestions.map((suggestion) => (
                               <button
-                                key={suggestion}
-                                onClick={() => handleExecuteParcelSearch(undefined, suggestion)}
+                                key={suggestion.label}
+                                onClick={() => {
+                                  if (suggestion.type === 'city') {
+                                    // City Node selected: set map center and switch to map view!
+                                    setUserCoords(suggestion.coords)
+                                    setSearchMode('map')
+                                    setShowSuggestions(false)
+                                    setCommandSearchInput(suggestion.label)
+                                    void recordSearchHistory(suggestion.label, 'map')
+                                  } else {
+                                    // Specific Address selected: execute parcel inspection modal!
+                                    void handleExecuteParcelSearch(undefined, suggestion.label)
+                                  }
+                                }}
                                 type="button"
-                                className="w-full px-4 py-2.5 text-xs font-medium text-[rgba(237,243,234,0.85)] hover:bg-[#102119] hover:text-[#c8b97a] transition border-b border-[rgba(237,243,234,0.08)] last:border-b-0"
+                                className="w-full px-4 py-2.5 text-xs font-medium text-[rgba(237,243,234,0.85)] hover:bg-[#102119] hover:text-[#c8b97a] transition border-b border-[rgba(237,243,234,0.08)] last:border-b-0 flex items-center justify-between"
                               >
-                                📍 {suggestion}
+                                <span>
+                                  {suggestion.type === 'city' ? '🌆' : '📍'} {suggestion.label}
+                                </span>
+                                <span className="font-mono text-[9px] uppercase text-[#88aa8f]">
+                                  {suggestion.type === 'city' ? 'City Node → Open Map' : 'Parcel Inspection'}
+                                </span>
                               </button>
                             ))}
                           </div>
@@ -594,23 +711,33 @@ export function ParticipantProfileWorkspace() {
                       <p className="text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
                     )}
 
-                    {/* Quick-Link Address Pills */}
+                    {/* Quick-Link Address & City Pills */}
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                       <span className="font-mono text-[10px] uppercase tracking-wider text-[rgba(237,243,234,0.5)]">
-                        Demo Sites:
+                        Quick City &amp; Parcel Nodes:
                       </span>
                       {[
-                        '639 N 25th St, Milwaukee, WI',
-                        '450 Auburn Ave NE, Atlanta, GA',
-                        '1901 E 7th Ave, Tampa, FL',
+                        { label: 'Waukesha, WI', city: true, coords: { lat: 43.0117, lng: -88.2314 } },
+                        { label: 'Kissimmee, FL', city: true, coords: { lat: 28.2919, lng: -81.4076 } },
+                        { label: '639 N 25th St, Milwaukee, WI', city: false },
+                        { label: '450 Auburn Ave NE, Atlanta, GA', city: false },
                       ].map((pill) => (
                         <button
-                          key={pill}
-                          onClick={() => handleExecuteParcelSearch(undefined, pill)}
+                          key={pill.label}
+                          onClick={() => {
+                            if (pill.city) {
+                              setUserCoords(pill.coords!)
+                              setSearchMode('map')
+                              setCommandSearchInput(pill.label)
+                              void recordSearchHistory(pill.label, 'map')
+                            } else {
+                              handleExecuteParcelSearch(undefined, pill.label)
+                            }
+                          }}
                           type="button"
                           className="rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.03] px-3 py-1 text-xs font-medium text-[#c8b97a] hover:bg-white/[0.08] hover:text-white transition shadow-sm"
                         >
-                          📍 {pill}
+                          {pill.city ? '🌆' : '📍'} {pill.label}
                         </button>
                       ))}
                     </div>
@@ -1088,6 +1215,7 @@ export function ParticipantProfileWorkspace() {
           user={user}
           currentRegion={userRegion}
           developerFeedbackEnabled={developerFeedbackEnabled}
+          searchHistory={searchHistory}
           onClose={() => setEditProfileOpen(false)}
           onSaveProfile={(data) => {
             setUserDisplayName(data.displayName)
@@ -1096,6 +1224,7 @@ export function ParticipantProfileWorkspace() {
             setDeveloperFeedbackEnabled(data.developerFeedbackEnabled)
           }}
           onNavigateView={(view) => setActiveConsoleView(view)}
+          onReinspectParcel={(query) => handleExecuteParcelSearch(undefined, query)}
         />
       )}
 

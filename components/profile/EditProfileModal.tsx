@@ -2,29 +2,40 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { X, User, MapPin, CheckCircle2, Save, Compass, MessageSquareCode } from 'lucide-react'
+import { X, User, MapPin, CheckCircle2, Save, Compass, MessageSquareCode, History, Search } from 'lucide-react'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export type UserTargetRegion = 'MKE' | 'ATL' | 'TPA'
 export type ConsoleViewMode = 'search' | 'squads' | 'homestead'
 
+export interface SearchHistoryItem {
+  id: string
+  query: string
+  mode: 'address' | 'map' | 'photo'
+  timestamp: string
+}
+
 interface EditProfileModalProps {
   user: { uid?: string; displayName?: string | null; email?: string | null } | null
   currentRegion: UserTargetRegion
   developerFeedbackEnabled: boolean
+  searchHistory?: SearchHistoryItem[]
   onClose: () => void
   onSaveProfile: (data: { displayName: string; handle: string; region: UserTargetRegion; bio: string; developerFeedbackEnabled: boolean }) => void
   onNavigateView?: (view: ConsoleViewMode) => void
+  onReinspectParcel?: (query: string) => void
 }
 
 export function EditProfileModal({
   user,
   currentRegion,
   developerFeedbackEnabled,
+  searchHistory = [],
   onClose,
   onSaveProfile,
   onNavigateView,
+  onReinspectParcel,
 }: EditProfileModalProps) {
   const [displayName, setDisplayName] = useState(user?.displayName || 'Ezra Haugabrooks')
   const [handle, setHandle] = useState(
@@ -118,6 +129,55 @@ export function EditProfileModal({
                 <Compass className="h-3.5 w-3.5" />
                 Change my pathway →
               </Link>
+            </div>
+
+            {/* Recent Search History & Saved Parcels */}
+            <div className="rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119]/80 p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-[#c8b97a]" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#c8b97a]">
+                    Search History &amp; Saved Parcels
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] text-[rgba(237,243,234,0.5)]">
+                  {searchHistory.length} Recorded
+                </span>
+              </div>
+
+              {searchHistory.length > 0 ? (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {searchHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-xs border border-[rgba(237,243,234,0.08)] hover:bg-white/[0.08] transition"
+                    >
+                      <div className="truncate">
+                        <span className="font-medium text-[#edf3ea]">{item.query}</span>
+                        <span className="block text-[10px] text-[rgba(237,243,234,0.5)] font-mono">
+                          Mode: {item.mode} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      {onReinspectParcel && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onReinspectParcel(item.query)
+                            onClose()
+                          }}
+                          className="inline-flex items-center gap-1 rounded-full bg-[#88aa8f]/20 border border-[#88aa8f]/40 px-2.5 py-1 text-[10px] font-semibold text-[#88aa8f] hover:bg-[#88aa8f]/30 transition shrink-0"
+                        >
+                          <Search className="h-3 w-3" /> Re-inspect
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-[rgba(237,243,234,0.5)] py-1">
+                  No recent searches recorded yet. Search addresses or click pins to build your profile history.
+                </p>
+              )}
             </div>
 
             {/* Quick Workspace Navigation Options Drawer */}
