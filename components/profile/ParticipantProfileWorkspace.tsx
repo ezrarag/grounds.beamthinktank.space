@@ -47,6 +47,9 @@ import type {
 import { useAcquisitionSites, getAssetTrack, type BeamAsset } from '@/lib/useAcquisitionSites'
 import { getTrackMeta } from '@/lib/tracks'
 import { AssetInterestModal } from '@/components/profile/AssetInterestModal'
+import type { ParcelResult } from '@/app/api/parcel/route'
+import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
+import { Search } from 'lucide-react'
 
 type ActiveDrawerTab = 'goals' | 'deed' | 'roles' | 'safety' | null
 export type MemberCategoryFilter = 'ALL' | 'COMMERCIAL' | 'CIVIC' | 'HOMESTEAD'
@@ -70,6 +73,37 @@ export function ParticipantProfileWorkspace() {
   const [workModalOpen, setWorkModalOpen] = useState(false)
   const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
   const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
+  const [commandSearchInput, setCommandSearchInput] = useState('')
+  const [searchingParcel, setSearchingParcel] = useState(false)
+  const [searchedParcelResult, setSearchedParcelResult] = useState<ParcelResult | null>(null)
+  const [commandSearchError, setCommandSearchError] = useState<string | null>(null)
+
+  async function handleExecuteParcelSearch(e: React.FormEvent) {
+    e.preventDefault()
+    const query = commandSearchInput.trim()
+    if (!query) return
+
+    setSearchingParcel(true)
+    setCommandSearchError(null)
+
+    try {
+      const res = await fetch(`/api/parcel?q=${encodeURIComponent(query)}`)
+      if (res.ok) {
+        const data = (await res.json()) as ParcelResult
+        if (data.found) {
+          setSearchedParcelResult(data)
+        } else {
+          setCommandSearchError(`No parcel data found for "${query}".`)
+        }
+      } else {
+        setCommandSearchError('Unable to query parcel endpoint.')
+      }
+    } catch {
+      setCommandSearchError('Failed to execute parcel search.')
+    } finally {
+      setSearchingParcel(false)
+    }
+  }
 
   // Fetch participant profile from Firestore if signed in
   useEffect(() => {
@@ -195,6 +229,45 @@ export function ParticipantProfileWorkspace() {
               {activeAcquisition ? 'Linked $1 Site Attached' : 'Claim $1 Homestead Site'}
             </button>
           </div>
+        </section>
+
+        {/* Universal Command Center Search Bar */}
+        <section className="mt-8 rounded-3xl border border-slate-900/10 bg-slate-900 p-6 text-white shadow-lg">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-0.5 text-[10px] font-mono font-bold uppercase text-emerald-400">
+                <Sparkles className="h-3 w-3" /> Real Estate Intelligence Command Center
+              </span>
+              <h2 className="text-lg font-bold">Search Any Street Address, TaxKey, or Site Worldwide</h2>
+              <p className="text-xs text-slate-400">
+                Instant Regrid parcel boundary lookup, zoning intelligence, financial pro-forma, and team assembly.
+              </p>
+            </div>
+
+            <form onSubmit={handleExecuteParcelSearch} className="flex gap-2 min-w-[320px] sm:min-w-[420px]">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={commandSearchInput}
+                  onChange={(e) => setCommandSearchInput(e.target.value)}
+                  placeholder="e.g. 639 N 25th St, 800 W Wells St, or 388-1204-000..."
+                  className="w-full rounded-full border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-medium text-white placeholder-slate-400 focus:border-emerald-400 focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={searchingParcel}
+                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-500 transition shadow-md disabled:opacity-50"
+              >
+                <Search className="h-3.5 w-3.5" />
+                {searchingParcel ? 'Searching...' : 'Inspect Parcel'}
+              </button>
+            </form>
+          </div>
+
+          {commandSearchError && (
+            <p className="mt-3 text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
+          )}
         </section>
 
         {/* Three Horizontal Metric Cards */}
@@ -841,6 +914,15 @@ export function ParticipantProfileWorkspace() {
           asset={interestTargetAsset}
           user={user}
           onClose={() => setInterestTargetAsset(null)}
+        />
+      )}
+
+      {/* Universal Real Estate Intelligence Split-View Workspace Modal */}
+      {searchedParcelResult && (
+        <ParcelIntelligenceWorkspaceModal
+          parcel={searchedParcelResult}
+          user={user}
+          onClose={() => setSearchedParcelResult(null)}
         />
       )}
     </div>
