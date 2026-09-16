@@ -81,6 +81,12 @@ export interface BeamAsset {
     | 'field-site'
     | 'property'
     | 'parking'
+    | 'retail'
+    | 'warehouse'
+    | 'industrial'
+    | 'studio'
+    | 'recording-studio'
+    | 'mixed-use'
     | 'other'
   stewardshipStatus?: 'unmonitored' | 'observed' | 'stewarded' | 'activated'
   civicLiabilities?: Array<{

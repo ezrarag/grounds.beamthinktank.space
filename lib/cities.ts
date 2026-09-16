@@ -133,6 +133,14 @@ export const CITIES: CityConfig[] = [
       appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
     },
   },
+  {
+    id: 'atlanta-ga',
+    label: 'Atlanta (Fulton County)',
+    state: 'GA',
+    dataSource: {
+      type: 'none',
+    },
+  },
 ]
 
 /** Shape of an admin-managed city stored in the Firestore `cities` collection. */

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Bell,
@@ -21,6 +21,10 @@ import {
   Sparkles,
   Truck,
   Wrench,
+  Send,
+  Coins,
+  FileSpreadsheet,
+  TrendingUp,
 } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -40,11 +44,16 @@ import type {
   GroundsTargetLocation,
   GroundsWorkRosterAttachment,
 } from '@/lib/types/groundsProfile'
+import { useAcquisitionSites, getAssetTrack, type BeamAsset } from '@/lib/useAcquisitionSites'
+import { getTrackMeta } from '@/lib/tracks'
+import { AssetInterestModal } from '@/components/profile/AssetInterestModal'
 
 type ActiveDrawerTab = 'goals' | 'deed' | 'roles' | 'safety' | null
+export type MemberCategoryFilter = 'ALL' | 'COMMERCIAL' | 'CIVIC' | 'HOMESTEAD'
 
 export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
+  const { sites: liveAssets } = useAcquisitionSites()
   const [activeDrawerTab, setActiveDrawerTab] = useState<ActiveDrawerTab>(null)
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
   const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
@@ -54,11 +63,13 @@ export function ParticipantProfileWorkspace() {
     { city: 'Atlanta', state: 'GA', priority: 2 },
   ])
   const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('All')
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<MemberCategoryFilter>('ALL')
   const [propertySearchQuery, setPropertySearchQuery] = useState<string>('')
   const [matcherOpen, setMatcherOpen] = useState(false)
   const [matcherCity, setMatcherCity] = useState<string | null>(null)
   const [workModalOpen, setWorkModalOpen] = useState(false)
   const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
+  const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
 
   // Fetch participant profile from Firestore if signed in
   useEffect(() => {
@@ -380,143 +391,324 @@ export function ParticipantProfileWorkspace() {
           )}
         </section>
 
-        {/* Multi-Location Property Association & Feed Section */}
-        <section className="mt-12 space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Compass className="h-4 w-4 text-slate-700" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f172a]">
-                  Location-Based Property Feed
-                </h3>
+        {/* Real-Estate Exploration & Property Feed Section */}
+        <section className="mt-12 space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4 border-b border-slate-100 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-slate-800" />
+                  <h3 className="text-base font-bold text-[#0f172a]">
+                    Real-Estate Exploration &amp; Site Pipeline
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Explore commercial production hubs, civic adaptive reuse anchors, and $1 homestead properties.
+                </p>
               </div>
-              <p className="text-xs text-slate-500">
-                Browse properties associated with your chosen target residency nodes.
-              </p>
-            </div>
 
-            {/* Property Search & City Location Filter Pills */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative min-w-[200px]">
+              {/* Search Bar */}
+              <div className="relative min-w-[240px]">
                 <input
                   type="text"
                   value={propertySearchQuery}
                   onChange={(e) => setPropertySearchQuery(e.target.value)}
-                  placeholder="Search address or parcel..."
-                  className="w-full rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1 text-xs font-medium text-slate-800 focus:border-slate-400 focus:outline-none"
+                  placeholder="Search address, zoning, asset..."
+                  className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-medium text-slate-800 focus:border-slate-400 focus:outline-none"
                 />
               </div>
+            </div>
 
+            {/* Filter Toolbar: Category Tracks & City Nodes */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              {/* Category Filter Pills */}
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Properties' },
+                    { id: 'COMMERCIAL', label: 'Commercial & Production (Track C/D)' },
+                    { id: 'CIVIC', label: 'Civic & Residential (Track A/B)' },
+                    { id: 'HOMESTEAD', label: '$1 Homestead Eligible' },
+                  ] as const
+                ).map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategoryFilter(cat.id)}
+                    type="button"
+                    className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
+                      selectedCategoryFilter === cat.id
+                        ? 'bg-[#1e293b] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* City Node Filter Pills */}
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setSelectedLocationFilter('All')}
                   type="button"
                   className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
                     selectedLocationFilter === 'All'
-                      ? 'bg-[#1e293b] text-white shadow-sm'
+                      ? 'bg-slate-800 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  All Nodes ({CITY_HOMESTEAD_SITES.length})
+                  All Cities
                 </button>
-
-              {targetCityNames.map((city) => {
-                const isSelected = selectedLocationFilter.toLowerCase() === city.toLowerCase()
-                const count = CITY_HOMESTEAD_SITES.filter(
-                  (s) => s.city.toLowerCase() === city.toLowerCase(),
-                ).length
-                return (
-                  <button
-                    key={city}
-                    onClick={() => setSelectedLocationFilter(city)}
-                    type="button"
-                    className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
-                      isSelected
-                        ? 'bg-[#1e293b] text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {city} ({count})
-                  </button>
-                )
-              })}
+                {targetCityNames.map((city) => {
+                  const isSelected = selectedLocationFilter.toLowerCase() === city.toLowerCase()
+                  return (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedLocationFilter(city)}
+                      type="button"
+                      className={`rounded-full px-3.5 py-1 text-xs font-semibold transition ${
+                        isSelected
+                          ? 'bg-slate-800 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
 
-          {/* Location Associated Property Cards */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {locationAssociatedProperties.map((site) => {
-              const isLinkedHomestead = activeAcquisition?.parcelId === site.parcelId
-              const isAttachedWorkRoster = workRosterSites.some((w) => w.assetId === site.id)
+          {/* Render Live BeamAsset Pipeline Properties */}
+          {selectedCategoryFilter !== 'HOMESTEAD' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-500">
+                <span>Live Pipeline Assets ({liveAssets.length})</span>
+                <span className="text-slate-400">Track A / B / C / D Pipeline</span>
+              </div>
 
-              return (
-                <div
-                  key={site.id}
-                  className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition ${
-                    isLinkedHomestead
-                      ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/20'
-                      : isAttachedWorkRoster
-                      ? 'border-sky-500 bg-sky-50/40 ring-2 ring-sky-500/20'
-                      : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1 flex-wrap">
-                      <span className="inline-block rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-slate-700">
-                        {site.city}, {site.state}
-                      </span>
-                      {isLinkedHomestead && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">
-                          <ShieldCheck className="h-3 w-3" /> $1 Homestead
-                        </span>
-                      )}
-                      {isAttachedWorkRoster && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2 py-0.5 text-[9px] font-bold text-white">
-                          <HardHat className="h-3 w-3" /> Work Roster
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="mt-2 text-sm font-bold text-[#0f172a]">{site.name}</h4>
-                    <p className="mt-1 text-xs text-slate-500">{site.address}</p>
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {liveAssets
+                  .filter((site) => {
+                    const track = getAssetTrack(site)
+                    const matchesCity =
+                      selectedLocationFilter === 'All' ||
+                      (site.city || '').toLowerCase().includes(selectedLocationFilter.toLowerCase()) ||
+                      site.regionId.toLowerCase().includes(selectedLocationFilter.toLowerCase())
+                    const matchesQuery =
+                      !propertySearchQuery ||
+                      site.name.toLowerCase().includes(propertySearchQuery.toLowerCase()) ||
+                      site.address.toLowerCase().includes(propertySearchQuery.toLowerCase()) ||
+                      (site.ckanZoning || '').toLowerCase().includes(propertySearchQuery.toLowerCase())
 
-                  <div className="mt-4 border-t border-slate-200 pt-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-mono text-slate-600">
-                      <span>TAXKEY: {site.parcelId}</span>
-                      <span className="font-bold text-[#0f172a]">
-                        ${site.essentialRepairsCost.toLocaleString()}
-                      </span>
-                    </div>
+                    if (selectedCategoryFilter === 'COMMERCIAL') {
+                      return (track === 'C' || track === 'D') && matchesCity && matchesQuery
+                    }
+                    if (selectedCategoryFilter === 'CIVIC') {
+                      return (track === 'A' || track === 'B') && matchesCity && matchesQuery
+                    }
+                    return matchesCity && matchesQuery
+                  })
+                  .map((site) => {
+                    const trackId = getAssetTrack(site)
+                    const meta = getTrackMeta(trackId)
+                    const isCommercial = trackId === 'C' || trackId === 'D'
 
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => {
-                          setWorkModalTarget(site)
-                          setWorkModalOpen(true)
-                        }}
-                        type="button"
-                        className="flex-1 rounded-xl border border-slate-300 bg-white py-1.5 text-center text-xs font-semibold text-slate-800 hover:bg-slate-50 transition"
+                    return (
+                      <div
+                        key={site.id}
+                        className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4 hover:border-slate-300 transition"
                       >
-                        {isAttachedWorkRoster ? 'Update Work Roster' : 'Attach Work Roster'}
-                      </button>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                            <span className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase font-bold ${meta.badgeClass}`}>
+                              {meta.label}
+                            </span>
+                            <span className="rounded-full bg-slate-200/80 px-2 py-0.5 font-mono text-[9px] uppercase text-slate-700 font-semibold">
+                              Stage: {site.acquisitionStage}
+                            </span>
+                          </div>
 
-                      <button
-                        onClick={() => {
-                          setMatcherCity(site.city)
-                          setMatcherOpen(true)
-                        }}
-                        type="button"
-                        className="flex-1 rounded-xl bg-slate-800 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-900 transition"
-                      >
-                        {isLinkedHomestead ? 'Manage $1 Site' : '$1 Homestead'}
-                      </button>
+                          <div>
+                            <h4 className="text-base font-bold text-[#0f172a]">{site.name}</h4>
+                            <p className="text-xs text-slate-500">{site.address}</p>
+                          </div>
+
+                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                            {site.operatorNarrative}
+                          </p>
+
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {site.locationType && (
+                              <span className="rounded bg-slate-200/70 px-2 py-0.5 text-[9px] font-mono uppercase text-slate-700">
+                                {site.locationType}
+                              </span>
+                            )}
+                            {site.ckanZoning && (
+                              <span className="rounded bg-slate-200/70 px-2 py-0.5 text-[9px] font-mono uppercase text-slate-700">
+                                Zoning: {site.ckanZoning}
+                              </span>
+                            )}
+                            {site.condition && (
+                              <span className="rounded bg-slate-200/70 px-2 py-0.5 text-[9px] font-mono uppercase text-slate-700">
+                                Condition: {site.condition}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Financial & Valuation Metrics Summary */}
+                        <div className="space-y-3 border-t border-slate-200 pt-3">
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                            <div className="rounded-xl bg-white border border-slate-200 p-2">
+                              <span className="text-[9px] text-slate-400 block">Est. Valuation</span>
+                              <span className="font-bold text-[#0f172a]">
+                                ${site.appraisalData?.estimatedValue
+                                  ? site.appraisalData.estimatedValue.toLocaleString()
+                                  : typeof site.ckanAssessedValue === 'number'
+                                  ? site.ckanAssessedValue.toLocaleString()
+                                  : '168,400'}
+                              </span>
+                            </div>
+
+                            <div className="rounded-xl bg-white border border-slate-200 p-2">
+                              <span className="text-[9px] text-slate-400 block">Repair Estimate</span>
+                              <span className="font-bold text-amber-700">
+                                ${site.appraisalData?.repairCostEstimate
+                                  ? site.appraisalData.repairCostEstimate.toLocaleString()
+                                  : '45,000'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {site.financePlan && (
+                            <div className="rounded-xl bg-slate-100 p-2.5 text-[11px] space-y-1">
+                              <div className="flex justify-between font-mono">
+                                <span className="text-slate-500">Plan Type:</span>
+                                <span className="font-bold text-slate-800">{site.financePlan.planType}</span>
+                              </div>
+                              {site.financePlan.projectedMonthlyRevenue ? (
+                                <div className="flex justify-between font-mono">
+                                  <span className="text-slate-500">Proj. Monthly Rev:</span>
+                                  <span className="font-bold text-emerald-700">
+                                    ${site.financePlan.projectedMonthlyRevenue.toLocaleString()}/mo
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2">
+                            {isCommercial ? (
+                              <button
+                                onClick={() => setInterestTargetAsset(site)}
+                                type="button"
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1e293b] py-2 text-xs font-semibold text-white hover:bg-slate-900 transition shadow-sm"
+                              >
+                                <Send className="h-3.5 w-3.5 text-emerald-400" />
+                                I&apos;m Interested
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setInterestTargetAsset(site)}
+                                type="button"
+                                className="flex-1 rounded-xl border border-slate-300 bg-white py-2 text-center text-xs font-semibold text-slate-800 hover:bg-slate-50 transition"
+                              >
+                                Propose Use / Inquiry
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Render $1 Homestead Eligible Sites */}
+          {(selectedCategoryFilter === 'ALL' || selectedCategoryFilter === 'HOMESTEAD' || selectedCategoryFilter === 'CIVIC') && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-500">
+                <span>$1 Homestead Sweat-Equity Sites ({locationAssociatedProperties.length})</span>
+                <span className="text-emerald-700 font-bold">$1 Homestead Track</span>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {locationAssociatedProperties.map((site) => {
+                  const isLinkedHomestead = activeAcquisition?.parcelId === site.parcelId
+                  const isAttachedWorkRoster = workRosterSites.some((w) => w.assetId === site.id)
+
+                  return (
+                    <div
+                      key={site.id}
+                      className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition ${
+                        isLinkedHomestead
+                          ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/20'
+                          : isAttachedWorkRoster
+                          ? 'border-sky-500 bg-sky-50/40 ring-2 ring-sky-500/20'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                          <span className="inline-block rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-slate-700">
+                            {site.city}, {site.state}
+                          </span>
+                          {isLinkedHomestead && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                              <ShieldCheck className="h-3 w-3" /> $1 Homestead
+                            </span>
+                          )}
+                          {isAttachedWorkRoster && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-2 py-0.5 text-[9px] font-bold text-white">
+                              <HardHat className="h-3 w-3" /> Work Roster
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="mt-2 text-sm font-bold text-[#0f172a]">{site.name}</h4>
+                        <p className="mt-1 text-xs text-slate-500">{site.address}</p>
+                      </div>
+
+                      <div className="mt-4 border-t border-slate-200 pt-3 space-y-2">
+                        <div className="flex items-center justify-between text-xs font-mono text-slate-600">
+                          <span>TAXKEY: {site.parcelId}</span>
+                          <span className="font-bold text-[#0f172a]">
+                            ${site.essentialRepairsCost.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => {
+                              setWorkModalTarget(site)
+                              setWorkModalOpen(true)
+                            }}
+                            type="button"
+                            className="flex-1 rounded-xl border border-slate-300 bg-white py-1.5 text-center text-xs font-semibold text-slate-800 hover:bg-slate-50 transition"
+                          >
+                            {isAttachedWorkRoster ? 'Update Roster' : 'Attach Roster'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setMatcherCity(site.city)
+                              setMatcherOpen(true)
+                            }}
+                            type="button"
+                            className="flex-1 rounded-xl bg-slate-800 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-900 transition"
+                          >
+                            {isLinkedHomestead ? 'Manage $1 Site' : '$1 Homestead'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Collapsible Section for Functional Profile Tools */}
@@ -642,6 +834,15 @@ export function ParticipantProfileWorkspace() {
           setWorkRosterSites((prev) => [...prev.filter((w) => w.assetId !== newAttachment.assetId), newAttachment])
         }}
       />
+
+      {/* Commercial & Track Asset Interest Inquiry Modal */}
+      {interestTargetAsset && (
+        <AssetInterestModal
+          asset={interestTargetAsset}
+          user={user}
+          onClose={() => setInterestTargetAsset(null)}
+        />
+      )}
     </div>
   )
 }
