@@ -57,6 +57,7 @@ import { EditProfileModal, type UserTargetRegion, type SearchHistoryItem } from 
 import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
 import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
 import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapCanvas'
+import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
@@ -142,6 +143,7 @@ export function ParticipantProfileWorkspace() {
   const [developerFeedbackEnabled, setDeveloperFeedbackEnabled] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([])
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
   
   const [commandSearchInput, setCommandSearchInput] = useState('')
   const [searchingParcel, setSearchingParcel] = useState(false)
@@ -149,6 +151,29 @@ export function ParticipantProfileWorkspace() {
   const [commandSearchError, setCommandSearchError] = useState<string | null>(null)
   const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<typeof CITY_NODE_DICTIONARY>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Deep-Link URL Resolver: Auto-open Parcel Intelligence Modal if taxkey, address, or lat/lng URL params exist
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const urlTaxkey = params.get('taxkey')
+    const urlAddress = params.get('address')
+    const urlLat = params.get('lat')
+    const urlLng = params.get('lng')
+
+    if (urlTaxkey || urlAddress) {
+      const q = urlAddress || urlTaxkey || ''
+      setCommandSearchInput(q)
+      void handleExecuteParcelSearch(undefined, q)
+    } else if (urlLat && urlLng) {
+      const lat = Number(urlLat)
+      const lng = Number(urlLng)
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setUserCoords({ lat, lng })
+        void handleExecuteParcelSearch(undefined, undefined, { lat, lng })
+      }
+    }
+  }, [])
 
   // Geolocation state
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -673,10 +698,19 @@ export function ParticipantProfileWorkspace() {
                   {/* Gentle Recent Searches Pill Bar */}
                   {searchHistory && searchHistory.length > 0 ? (
                     <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
-                      <span className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.55)] flex items-center gap-1">
-                        <History className="h-3 w-3 text-[#c8b97a]" /> Recent Searches:
+                      <button
+                        onClick={() => setHistoryDrawerOpen(true)}
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-full border border-[#88aa8f]/40 bg-[#102119] px-3 py-0.5 text-[11px] font-mono font-bold text-[#c8b97a] hover:bg-[#1b3327] hover:border-[#c8b97a] transition shadow-sm"
+                        title="Open Detailed Search History Drawer"
+                      >
+                        <History className="h-3 w-3 text-[#c8b97a]" />
+                        <span>(ⓘ History)</span>
+                      </button>
+                      <span className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.55)] hidden sm:inline">
+                        Recent:
                       </span>
-                      {searchHistory.slice(0, 5).map((item) => (
+                      {searchHistory.slice(0, 4).map((item) => (
                         <button
                           key={item.id}
                           onClick={() => {
@@ -691,7 +725,7 @@ export function ParticipantProfileWorkspace() {
                           className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-[#c8b97a] hover:bg-[#88aa8f]/20 hover:text-white transition shadow-sm"
                         >
                           <span>{item.mode === 'map' ? '🗺️' : '📍'}</span>
-                          <span className="truncate max-w-[150px]">{item.query}</span>
+                          <span className="truncate max-w-[130px]">{item.query}</span>
                         </button>
                       ))}
                     </div>
@@ -1240,6 +1274,16 @@ export function ParticipantProfileWorkspace() {
           onClose={() => setSearchedParcelResult(null)}
         />
       )}
+
+      {/* Minimalist Slide-out Search History Drawer */}
+      <SearchHistoryDrawer
+        isOpen={historyDrawerOpen}
+        searchHistory={searchHistory}
+        onClose={() => setHistoryDrawerOpen(false)}
+        onReinspect={(item) => handleExecuteParcelSearch(undefined, item.query)}
+        onClearHistory={() => setSearchHistory([])}
+        onDeleteItem={(id) => setSearchHistory((prev) => prev.filter((i) => i.id !== id))}
+      />
     </div>
   )
 }
