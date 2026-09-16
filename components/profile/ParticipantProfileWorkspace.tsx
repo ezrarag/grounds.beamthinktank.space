@@ -56,6 +56,7 @@ import { LiveOpportunityFeed } from '@/components/profile/LiveOpportunityFeed'
 import { EditProfileModal, type UserTargetRegion, type SearchHistoryItem } from '@/components/profile/EditProfileModal'
 import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
 import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
+import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapCanvas'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
@@ -744,109 +745,22 @@ export function ParticipantProfileWorkspace() {
                   </form>
                 )}
 
-                {/* MODE 2: Embedded Interactive Spatial Map Viewer */}
+                {/* MODE 2: Interactive Pin Placement & Draggable Marker Canvas */}
                 {searchMode === 'map' && (
-                  <div className="max-w-3xl mx-auto space-y-4">
-                    {/* Map Controls & Geolocation Status Bar */}
-                    <div className="rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119]/90 p-4 space-y-3 text-left">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-[#c8b97a]" />
-                          <span className="font-mono text-xs font-bold text-[#edf3ea]">
-                            {userCoords
-                              ? `GPS Coordinates: ${userCoords.lat.toFixed(4)}° N, ${userCoords.lng.toFixed(4)}° W`
-                              : geoLocating
-                              ? 'Fetching browser GPS coordinates...'
-                              : 'Location detected (Milwaukee Center Node)'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={requestUserLocation}
-                            disabled={geoLocating}
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.16)] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-[#88aa8f] hover:bg-white/10 transition"
-                          >
-                            <Compass className={`h-3 w-3 ${geoLocating ? 'animate-spin' : ''}`} />
-                            {geoLocating ? 'Locating...' : 'Detect My Location'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {geoError && (
-                        <p className="text-[11px] text-amber-300 bg-amber-950/40 p-2 rounded-lg border border-amber-800/40">
-                          {geoError} (Using target node default coordinates)
-                        </p>
-                      )}
-
-                      {/* External Map Deep-Links & Quick Actions */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(237,243,234,0.08)]">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`https://maps.apple.com/?q=${userCoords?.lat || 43.0396},${userCoords?.lng || -87.945}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:text-white transition"
-                          >
-                            🍎 Open in Apple Maps <ExternalLink className="h-3 w-3 opacity-60" />
-                          </a>
-                          <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${userCoords?.lat || 43.0396},${userCoords?.lng || -87.945}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-full border border-emerald-800/50 bg-emerald-950/60 px-3 py-1 text-xs font-semibold text-emerald-200 hover:border-emerald-600 hover:text-white transition"
-                          >
-                            🌐 Open in Google Maps <ExternalLink className="h-3 w-3 opacity-60" />
-                          </a>
-                        </div>
-
-                        {userCoords && (
-                          <button
-                            onClick={() => handleExecuteParcelSearch(undefined, undefined, userCoords)}
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-full bg-[#88aa8f] px-3.5 py-1 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-sm"
-                          >
-                            <Search className="h-3 w-3" /> Inspect Local Parcel →
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Embedded Interactive Google Map iFrame Frame */}
-                    <div className="relative h-80 w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.18)] bg-[#07100c] shadow-2xl">
-                      <iframe
-                        title="Embedded Interactive Google Map"
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        loading="lazy"
-                        allowFullScreen
-                        referrerPolicy="no-referrer-when-downgrade"
-                        src={`https://maps.google.com/maps?q=${userCoords ? `${userCoords.lat},${userCoords.lng}` : '43.0389,-87.9065'}&z=15&output=embed`}
-                        className="w-full h-full grayscale-[25%] contrast-[110%] rounded-3xl"
-                      />
-                    </div>
-
-                    {/* Real Active BEAM Acquisition Sites in Database */}
-                    <div className="flex flex-wrap justify-center gap-2 pt-1">
-                      <span className="w-full text-center font-mono text-[10px] uppercase text-[rgba(237,243,234,0.5)]">
-                        Real Acquisition Sites ({liveAssets.length}):
-                      </span>
-                      {liveAssets.map((asset) => (
-                        <button
-                          key={asset.id}
-                          onClick={() => {
-                            handleExecuteParcelSearch(undefined, asset.address)
-                          }}
-                          type="button"
-                          className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(237,243,234,0.14)] bg-[#102119] px-3 py-1.5 text-xs font-semibold text-[#c8b97a] hover:bg-[#1b3327] transition"
-                        >
-                          <MapPin className="h-3.5 w-3.5 text-[#88aa8f]" />
-                          {asset.name} ({asset.city || 'WI'})
-                        </button>
-                      ))}
-                    </div>
+                  <div className="max-w-3xl mx-auto">
+                    <InteractivePinMapCanvas
+                      center={userCoords || { lat: 43.0396, lng: -87.945 }}
+                      onCoordsChange={(coords, autoInspect) => {
+                        setUserCoords(coords)
+                        if (autoInspect) {
+                          void handleExecuteParcelSearch(undefined, undefined, coords)
+                        }
+                      }}
+                      onInspectParcel={(coords) => {
+                        void handleExecuteParcelSearch(undefined, undefined, coords)
+                      }}
+                      liveAssets={liveAssets}
+                    />
                   </div>
                 )}
 
