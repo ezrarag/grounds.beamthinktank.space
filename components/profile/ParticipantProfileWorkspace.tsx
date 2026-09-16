@@ -701,24 +701,22 @@ export function ParticipantProfileWorkspace() {
                       />
                     </div>
 
-                    {/* Clickable Quick Target Node Pins */}
+                    {/* Real Active BEAM Acquisition Sites in Database */}
                     <div className="flex flex-wrap justify-center gap-2 pt-1">
-                      {[
-                        { name: 'Sanctuary Hub (Milwaukee)', coords: { lat: 43.0396, lng: -87.945 } },
-                        { name: 'Auburn Residency (Atlanta)', coords: { lat: 33.7554, lng: -84.3725 } },
-                        { name: 'Ybor Arts Lab (Tampa)', coords: { lat: 27.9602, lng: -82.4368 } },
-                      ].map((pin) => (
+                      <span className="w-full text-center font-mono text-[10px] uppercase text-[rgba(237,243,234,0.5)]">
+                        Real Acquisition Sites ({liveAssets.length}):
+                      </span>
+                      {liveAssets.map((asset) => (
                         <button
-                          key={pin.name}
+                          key={asset.id}
                           onClick={() => {
-                            setUserCoords(pin.coords)
-                            handleExecuteParcelSearch(undefined, undefined, pin.coords)
+                            handleExecuteParcelSearch(undefined, asset.address)
                           }}
                           type="button"
                           className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(237,243,234,0.14)] bg-[#102119] px-3 py-1.5 text-xs font-semibold text-[#c8b97a] hover:bg-[#1b3327] transition"
                         >
                           <MapPin className="h-3.5 w-3.5 text-[#88aa8f]" />
-                          {pin.name}
+                          {asset.name} ({asset.city || 'WI'})
                         </button>
                       ))}
                     </div>
