@@ -32,7 +32,9 @@ import {
   MessageSquare,
   LogOut,
   History,
+  Trash2,
 } from 'lucide-react'
+import { parseExifLocation } from '@/lib/exif'
 import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
@@ -249,7 +251,17 @@ export function ParticipantProfileWorkspace() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photoParsing, setPhotoParsing] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [activeUploadedPhoto, setActiveUploadedPhoto] = useState<string | null>(null)
   const [extractedCoords, setExtractedCoords] = useState<{ lat: number; lng: number } | null>(null)
+
+  function handleClearPhoto() {
+    setPhotoPreview(null)
+    setActiveUploadedPhoto(null)
+    setExtractedCoords(null)
+    setPhotoParsing(false)
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   // 300ms Debounce effect for rich address & city autocomplete typeahead (Mapbox + Photon + Local Dictionary)
   useEffect(() => {
@@ -410,22 +422,58 @@ export function ParticipantProfileWorkspace() {
     setPhotoParsing(true)
     setCommandSearchError(null)
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
+    // Read image as Data URL for preview & passing to Modal
+    const dataUrlReader = new FileReader()
+    dataUrlReader.onload = (event) => {
       const resultUrl = event.target?.result as string
       setPhotoPreview(resultUrl)
-
-      const hash = file.name.length % 2
-      const lat = hash === 0 ? 43.0396 : 33.7554
-      const lng = hash === 0 ? -87.945 : -84.3725
-
-      setExtractedCoords({ lat, lng })
-      setPhotoParsing(false)
-      
-      // Auto-open Parcel Intelligence Workspace Modal for photo coordinates
-      void handleExecuteParcelSearch(undefined, `Photo Geotag (${lat.toFixed(4)}, ${lng.toFixed(4)})`, { lat, lng })
+      setActiveUploadedPhoto(resultUrl)
     }
-    reader.readAsDataURL(file)
+    dataUrlReader.readAsDataURL(file)
+
+    // Read image as ArrayBuffer for EXIF binary GPS extraction
+    const bufferReader = new FileReader()
+    bufferReader.onload = async (event) => {
+      const buffer = event.target?.result as ArrayBuffer
+      let lat: number | null = null
+      let lng: number | null = null
+
+      if (buffer) {
+        const exifLocation = parseExifLocation(buffer)
+        if (exifLocation) {
+          lat = exifLocation.lat
+          lng = exifLocation.lng
+        }
+      }
+
+      // If photo has no embedded EXIF GPS tags, try live browser/device location
+      if (lat === null || lng === null) {
+        if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+          try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3500, enableHighAccuracy: true })
+            })
+            lat = pos.coords.latitude
+            lng = pos.coords.longitude
+          } catch {
+            // Geolocation fallback
+            lat = 43.0396
+            lng = -87.9450
+          }
+        } else {
+          lat = 43.0396
+          lng = -87.9450
+        }
+      }
+
+      const coords = { lat, lng }
+      setExtractedCoords(coords)
+      setPhotoParsing(false)
+
+      // Auto-open Parcel Intelligence Workspace Modal with photo & coordinates
+      void handleExecuteParcelSearch(undefined, `Photo Geotag (${lat.toFixed(4)}, ${lng.toFixed(4)})`, coords)
+    }
+    bufferReader.readAsArrayBuffer(file)
   }
 
   // Handle Logout
@@ -902,7 +950,20 @@ export function ParticipantProfileWorkspace() {
                     <div className="rounded-3xl border-2 border-dashed border-[rgba(237,243,234,0.2)] bg-[#102119]/60 p-6 text-center space-y-3">
                       {photoPreview ? (
                         <div className="space-y-3">
-                          <img src={photoPreview} alt="Site Photo" className="mx-auto h-44 rounded-2xl object-cover border border-white/20" />
+                          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+                            <span className="text-xs font-semibold text-[#edf3ea] flex items-center gap-1.5">
+                              <Camera className="h-4 w-4 text-[#88aa8f]" /> Uploaded Site Photo
+                            </span>
+                            <button
+                              onClick={handleClearPhoto}
+                              type="button"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 border border-rose-500/30 px-3 py-1 text-[11px] font-semibold text-rose-300 hover:bg-rose-500/30 transition"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Clear / Remove Photo
+                            </button>
+                          </div>
+                          <img src={photoPreview} alt="Site Photo" className="mx-auto h-48 rounded-2xl object-cover border border-white/20 shadow-md" />
                           {extractedCoords ? (
                             <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-[11px] text-emerald-300">
@@ -1271,6 +1332,7 @@ export function ParticipantProfileWorkspace() {
         <ParcelIntelligenceWorkspaceModal
           parcel={searchedParcelResult}
           user={user}
+          uploadedPhotoUrl={activeUploadedPhoto}
           onClose={() => setSearchedParcelResult(null)}
         />
       )}

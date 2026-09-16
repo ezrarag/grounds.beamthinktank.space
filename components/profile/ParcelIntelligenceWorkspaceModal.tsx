@@ -28,6 +28,7 @@ import { PropertyVisualizer } from '@/components/PropertyVisualizer'
 interface ParcelIntelligenceWorkspaceModalProps {
   parcel: ParcelResult | null
   user: { uid?: string; displayName?: string | null; email?: string | null } | null
+  uploadedPhotoUrl?: string | null
   onClose: () => void
   onTableGroundSuccess?: (siteName: string) => void
 }
@@ -35,6 +36,7 @@ interface ParcelIntelligenceWorkspaceModalProps {
 export function ParcelIntelligenceWorkspaceModal({
   parcel,
   user,
+  uploadedPhotoUrl,
   onClose,
   onTableGroundSuccess,
 }: ParcelIntelligenceWorkspaceModalProps) {
@@ -44,10 +46,18 @@ export function ParcelIntelligenceWorkspaceModal({
   const [tabledSuccess, setTabledSuccess] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [grantMatches, setGrantMatches] = useState<{ totalGrantAllocation: number; matchedGrants: Array<{ id: string; programName: string; allocatedAmount: number; hourlyStipendMatch?: number }> } | null>(null)
-  const [visualMode, setVisualMode] = useState<'street' | 'satellite'>('street')
+  const [visualMode, setVisualMode] = useState<'uploaded' | 'street' | 'satellite'>(
+    uploadedPhotoUrl ? 'uploaded' : 'street'
+  )
   const [streetViewError, setStreetViewError] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const [reviewRequestNotice, setReviewRequestNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (uploadedPhotoUrl) {
+      setVisualMode('uploaded')
+    }
+  }, [uploadedPhotoUrl])
 
   useEffect(() => {
     if (!parcel) return
@@ -316,11 +326,24 @@ export function ParcelIntelligenceWorkspaceModal({
           <div className="grid gap-6 lg:grid-cols-12">
           {/* LEFT SIDE: Visual Confirmation & Property Profile (5 cols) */}
           <div className="lg:col-span-5 space-y-5">
-            {/* Visual Confirmation Card with Dual View Switcher */}
+            {/* Visual Confirmation Card with Multi-View Switcher */}
             <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 {/* Visual View Switcher Buttons */}
                 <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700">
+                  {uploadedPhotoUrl && (
+                    <button
+                      onClick={() => setVisualMode('uploaded')}
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                        visualMode === 'uploaded'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      📸 Site Photo
+                    </button>
+                  )}
                   <button
                     onClick={() => setVisualMode('street')}
                     type="button"
@@ -330,7 +353,7 @@ export function ParcelIntelligenceWorkspaceModal({
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    📸 Street View
+                    📷 Street View
                   </button>
                   <button
                     onClick={() => setVisualMode('satellite')}
@@ -352,7 +375,19 @@ export function ParcelIntelligenceWorkspaceModal({
 
               {/* Visual Media Container */}
               <div className="relative h-60 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
-                {visualMode === 'street' ? (
+                {visualMode === 'uploaded' && uploadedPhotoUrl ? (
+                  <div className="relative h-full w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                    <img
+                      src={uploadedPhotoUrl}
+                      alt={`Captured Site Photo for ${parcel.address}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute bottom-2 left-2 rounded-md bg-black/80 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-md">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                      Uploaded Site Photo Matched
+                    </div>
+                  </div>
+                ) : visualMode === 'street' ? (
                   !streetViewError ? (
                     <img
                       src={`/api/streetview?location=${encodeURIComponent(parcel.address || `${parcel.lat},${parcel.lng}`)}`}
