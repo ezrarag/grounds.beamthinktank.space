@@ -39,27 +39,35 @@ export function ParcelIntelligenceWorkspaceModal({
   const [submitting, setSubmitting] = useState(false)
   const [tabledSuccess, setTabledSuccess] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [grantMatches, setGrantMatches] = useState<{ totalGrantAllocation: number; matchedGrants: Array<{ id: string; programName: string; allocatedAmount: number; hourlyStipendMatch?: number }> } | null>(null)
 
   useEffect(() => {
     if (!parcel) return
     let isCancelled = false
 
-    async function loadArchSpecs() {
+    async function loadArchSpecsAndGrants() {
       setLoadingArch(true)
       try {
-        const res = await fetch(`/api/architecture/specs?parcelId=${encodeURIComponent(parcel!.parcelId)}`)
-        if (res.ok && !isCancelled) {
-          const json = await res.json()
+        const [archRes, grantRes] = await Promise.all([
+          fetch(`/api/architecture/specs?parcelId=${encodeURIComponent(parcel!.parcelId)}`),
+          fetch(`/api/grants/match?parcelId=${encodeURIComponent(parcel!.parcelId)}`),
+        ])
+        if (archRes.ok && !isCancelled) {
+          const json = await archRes.json()
           setArchSpecs(json)
         }
+        if (grantRes.ok && !isCancelled) {
+          const grantJson = await grantRes.json()
+          setGrantMatches(grantJson)
+        }
       } catch (err) {
-        console.warn('Unable to load architectural specs:', err)
+        console.warn('Unable to load parcel intelligence details:', err)
       } finally {
         if (!isCancelled) setLoadingArch(false)
       }
     }
 
-    void loadArchSpecs()
+    void loadArchSpecsAndGrants()
     return () => {
       isCancelled = true
     }
@@ -362,6 +370,28 @@ export function ParcelIntelligenceWorkspaceModal({
                   </span>
                 </div>
               </div>
+
+              {/* Workforce Grants & Enterprise Sponsor Match Badges */}
+              {grantMatches && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-950">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="h-4 w-4 text-emerald-600" /> Matched Workforce Grants &amp; Enterprise Capital
+                    </span>
+                    <span className="text-emerald-700">${grantMatches.totalGrantAllocation.toLocaleString()} Total Funding</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {grantMatches.matchedGrants.map((grant) => (
+                      <span
+                        key={grant.id}
+                        className="rounded-lg bg-white border border-emerald-200 px-2 py-1 text-[10px] font-mono text-emerald-900 font-semibold"
+                      >
+                        {grant.programName} (+${grant.allocatedAmount.toLocaleString()})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Integrated Acquisition & Team Assembly Module */}
