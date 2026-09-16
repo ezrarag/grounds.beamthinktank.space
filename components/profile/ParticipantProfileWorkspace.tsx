@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell,
   Building2,
@@ -24,7 +25,10 @@ import {
   Camera,
   Map as MapIcon,
   UploadCloud,
-  Image as ImageIcon,
+  Settings,
+  Flame,
+  Home,
+  User,
 } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -45,9 +49,12 @@ import { AssetInterestModal } from '@/components/profile/AssetInterestModal'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
 import { LiveOpportunityFeed } from '@/components/profile/LiveOpportunityFeed'
+import { EditProfileModal, type UserTargetRegion } from '@/components/profile/EditProfileModal'
+import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
+export type ConsoleViewMode = 'search' | 'squads' | 'homestead'
 
 export interface ComplianceItem {
   id: string
@@ -92,11 +99,17 @@ export function ParticipantProfileWorkspace() {
   const { user } = usePortalAccessState()
   const { sites: liveAssets } = useAcquisitionSites()
   const [profileTab, setProfileTab] = useState<ProfileTab>(null) // closed by default
+  const [activeConsoleView, setActiveConsoleView] = useState<ConsoleViewMode>('search')
   const [searchMode, setSearchMode] = useState<SearchMode>('address')
+  const [userRegion, setUserRegion] = useState<UserTargetRegion>('MKE')
+  
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null)
+  const [userHandle, setUserHandle] = useState<string | null>(null)
   const [activeAcquisition, setActiveAcquisition] = useState<GroundsActiveAcquisition | null>(null)
   const [workRosterSites, setWorkRosterSites] = useState<GroundsWorkRosterAttachment[]>([])
   
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
   const [matcherOpen, setMatcherOpen] = useState(false)
   const [matcherCity, setMatcherCity] = useState<string | null>(null)
   const [workModalOpen, setWorkModalOpen] = useState(false)
@@ -187,8 +200,6 @@ export function ParticipantProfileWorkspace() {
       const resultUrl = event.target?.result as string
       setPhotoPreview(resultUrl)
 
-      // Extract metadata / synthetic lat-lng for demo parcels
-      // Default to Milwaukee 639 N 25th St or Atlanta Auburn Ave depending on file hash
       const hash = file.name.length % 2
       const lat = hash === 0 ? 43.0396 : 33.7554
       const lng = hash === 0 ? -87.945 : -84.3725
@@ -209,6 +220,9 @@ export function ParticipantProfileWorkspace() {
         const snap = await getDoc(doc(db!, 'participantProfiles', user!.uid))
         if (snap.exists() && !isCancelled) {
           const data = snap.data()
+          if (data.displayName) setUserDisplayName(data.displayName)
+          if (data.handle) setUserHandle(data.handle)
+          if (data.preferredRegion) setUserRegion(data.preferredRegion as UserTargetRegion)
           if (data.photoURL || data.headshotUrl || data.avatarUrl) {
             setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
           }
@@ -230,7 +244,7 @@ export function ParticipantProfileWorkspace() {
     }
   }, [user])
 
-  const displayName = user?.displayName || 'Ezra Haugabrooks'
+  const displayName = userDisplayName || user?.displayName || 'Ezra Haugabrooks'
   const initials = displayName
     .split(' ')
     .map((n) => n[0])
@@ -253,9 +267,9 @@ export function ParticipantProfileWorkspace() {
       {/* Main Container */}
       <main className="relative z-10 mx-auto max-w-4xl px-6 py-10 space-y-8">
         
-        {/* 1. IDENTITY STRIP */}
+        {/* 1. IDENTITY STRIP & REFACTORED HEADER */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[rgba(237,243,234,0.12)] pb-6">
-          {/* Avatar + Name + Verified Badge */}
+          {/* Avatar + Name + Interactive Edit Profile Pill */}
           <div className="flex items-center gap-4">
             <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1b3327] border border-[#88aa8f]/40 font-mono text-sm font-bold text-[#c8b97a] shadow-inner">
               {avatarUrl ? (
@@ -273,246 +287,315 @@ export function ParticipantProfileWorkspace() {
                 <h1 className="font-serif text-xl font-medium tracking-tight text-[#edf3ea] sm:text-2xl">
                   {displayName}
                 </h1>
-                <span className="rounded-full bg-[#88aa8f]/15 border border-[#88aa8f]/30 px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest text-[#88aa8f]">
-                  Verified Participant
-                </span>
+                
+                {/* Refactored Interactive [ ⚙️ Edit Profile ] Pill Button */}
+                <button
+                  onClick={() => setEditProfileOpen(true)}
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#88aa8f]/15 border border-[#88aa8f]/30 px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#88aa8f] hover:bg-[#88aa8f]/25 hover:text-white transition shadow-sm"
+                >
+                  <Settings className="h-3 w-3" /> Edit Profile
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Right-aligned Actions */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              href="/portal/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(237,243,234,0.16)] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-[#edf3ea] hover:bg-white/[0.08] transition shadow-sm"
+          {/* Right-aligned Header Action Slot (View Switchers) */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setActiveConsoleView('search')}
+              type="button"
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition ${
+                activeConsoleView === 'search'
+                  ? 'border border-[#88aa8f] bg-[#88aa8f]/20 text-[#edf3ea] shadow-sm font-bold'
+                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.04] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.08] hover:text-white'
+              }`}
             >
-              <Compass className="h-3.5 w-3.5 text-[#c8b97a]" />
-              Change my pathway
-            </Link>
+              <Search className="h-3.5 w-3.5 text-[#88aa8f]" />
+              Search Engine
+            </button>
 
             <button
-              onClick={() => {
-                setMatcherCity(null)
-                setMatcherOpen(true)
-              }}
+              onClick={() => setActiveConsoleView('squads')}
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#88aa8f]/50 bg-[#88aa8f]/20 px-4.5 py-2 text-xs font-semibold text-[#edf3ea] hover:bg-[#88aa8f]/30 transition shadow-sm"
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition ${
+                activeConsoleView === 'squads'
+                  ? 'border border-[#c8b97a] bg-[#c8b97a]/20 text-[#edf3ea] shadow-sm font-bold'
+                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.04] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.08] hover:text-white'
+              }`}
             >
-              <Plus className="h-3.5 w-3.5 text-[#88aa8f]" />
-              {activeAcquisition ? 'Linked $1 Site Attached' : 'Claim $1 homestead site'}
+              <Flame className="h-3.5 w-3.5 text-amber-400" />
+              Live Opportunities
+            </button>
+
+            <button
+              onClick={() => setActiveConsoleView('homestead')}
+              type="button"
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition ${
+                activeConsoleView === 'homestead'
+                  ? 'border border-[#88aa8f] bg-[#88aa8f]/30 text-[#edf3ea] shadow-sm font-bold'
+                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.04] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.08] hover:text-white'
+              }`}
+            >
+              <Home className="h-3.5 w-3.5 text-[#88aa8f]" />
+              Claim $1 Homestead
             </button>
           </div>
         </header>
 
-        {/* 2. COMMAND CENTER (Primary Focus Large Centered Card) */}
-        <section className="rounded-[28px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-8 shadow-2xl backdrop-blur-sm text-center space-y-6">
-          <div className="space-y-3">
-            <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
-              REAL ESTATE INTELLIGENCE &amp; ACTUATION
-            </span>
+        {/* 2. DYNAMIC MAIN CONSOLE STAGE (Animated Framer Motion Switcher) */}
+        <section className="relative">
+          <AnimatePresence mode="wait">
+            {/* VIEW A (Default): Real Estate Intelligence & Actuation Search */}
+            {activeConsoleView === 'search' && (
+              <motion.div
+                key="search-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+                className="rounded-[28px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-8 shadow-2xl backdrop-blur-sm text-center space-y-6"
+              >
+                <div className="space-y-3">
+                  <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
+                    REAL ESTATE INTELLIGENCE &amp; ACTUATION
+                  </span>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex justify-center gap-1.5 pt-1">
-              {(
-                [
-                  { id: 'address', label: '🔍 Address Search', icon: Search },
-                  { id: 'map', label: '🗺️ Interactive Map', icon: MapIcon },
-                  { id: 'photo', label: '📸 Upload Photo', icon: Camera },
-                ] as const
-              ).map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => setSearchMode(mode.id)}
-                  type="button"
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                    searchMode === mode.id
-                      ? 'bg-[#88aa8f] text-[#07100c] shadow-sm font-bold'
-                      : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
-                  }`}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
+                  {/* Mode Switcher Tabs */}
+                  <div className="flex justify-center gap-1.5 pt-1">
+                    {(
+                      [
+                        { id: 'address', label: '🔍 Address Search', icon: Search },
+                        { id: 'map', label: '🗺️ Interactive Map', icon: MapIcon },
+                        { id: 'photo', label: '📸 Upload Photo', icon: Camera },
+                      ] as const
+                    ).map((mode) => (
+                      <button
+                        key={mode.id}
+                        onClick={() => setSearchMode(mode.id)}
+                        type="button"
+                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                          searchMode === mode.id
+                            ? 'bg-[#88aa8f] text-[#07100c] shadow-sm font-bold'
+                            : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
 
-            <h2 className="font-serif text-3xl font-medium tracking-tight text-[#edf3ea] sm:text-4xl pt-1">
-              {searchMode === 'address'
-                ? 'Search Any Parcel or Site Worldwide'
-                : searchMode === 'map'
-                ? 'Interactive Visual Parcel Boundary Map'
-                : 'Upload Site Photo with EXIF Geotag Extraction'}
-            </h2>
+                  <h2 className="font-serif text-3xl font-medium tracking-tight text-[#edf3ea] sm:text-4xl pt-1">
+                    {searchMode === 'address'
+                      ? 'Search Any Parcel or Site Worldwide'
+                      : searchMode === 'map'
+                      ? 'Interactive Visual Parcel Boundary Map'
+                      : 'Upload Site Photo with EXIF Geotag Extraction'}
+                  </h2>
 
-            <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
-              {searchMode === 'address'
-                ? 'Enter any street address, tax key, or site name to run instant Regrid parcel boundary lookup, zoning intelligence, financial pro-forma, and team assembly.'
-                : searchMode === 'map'
-                ? 'Tap any parcel pin directly on the spatial map to inspect Regrid tax records, zoning codes, and structural rehab models.'
-                : 'Upload or snap a photo of any vacant lot. Auto-extract GPS metadata coordinates to instantly locate and inspect the parcel.'}
-            </p>
-          </div>
+                  <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
+                    {searchMode === 'address'
+                      ? 'Enter any street address, tax key, or site name to run instant Regrid parcel boundary lookup, zoning intelligence, financial pro-forma, and team assembly.'
+                      : searchMode === 'map'
+                      ? 'Tap any parcel pin directly on the spatial map to inspect Regrid tax records, zoning codes, and structural rehab models.'
+                      : 'Upload or snap a photo of any vacant lot. Auto-extract GPS metadata coordinates to instantly locate and inspect the parcel.'}
+                  </p>
+                </div>
 
-          {/* MODE 1: Address Search Form */}
-          {searchMode === 'address' && (
-            <form onSubmit={handleExecuteParcelSearch} className="max-w-2xl mx-auto space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={commandSearchInput}
-                    onChange={(e) => setCommandSearchInput(e.target.value)}
-                    onFocus={() => setShowSuggestions(typeaheadSuggestions.length > 0)}
-                    placeholder="Enter street address, city, or TaxKey (e.g. 639 N 25th St)..."
-                    className="w-full rounded-full border border-[rgba(237,243,234,0.18)] bg-[#102119]/80 px-5 py-3 text-sm text-[#edf3ea] placeholder:text-[rgba(237,243,234,0.4)] focus:border-[#88aa8f] focus:outline-none shadow-inner"
-                  />
+                {/* MODE 1: Address Search Form */}
+                {searchMode === 'address' && (
+                  <form onSubmit={handleExecuteParcelSearch} className="max-w-2xl mx-auto space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={commandSearchInput}
+                          onChange={(e) => setCommandSearchInput(e.target.value)}
+                          onFocus={() => setShowSuggestions(typeaheadSuggestions.length > 0)}
+                          placeholder="Enter street address, city, or TaxKey (e.g. 639 N 25th St)..."
+                          className="w-full rounded-full border border-[rgba(237,243,234,0.18)] bg-[#102119]/80 px-5 py-3 text-sm text-[#edf3ea] placeholder:text-[rgba(237,243,234,0.4)] focus:border-[#88aa8f] focus:outline-none shadow-inner"
+                        />
 
-                  {/* Autocomplete Suggestions Menu */}
-                  {showSuggestions && typeaheadSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] shadow-2xl text-left">
-                      {typeaheadSuggestions.map((suggestion) => (
+                        {/* Autocomplete Suggestions Menu */}
+                        {showSuggestions && typeaheadSuggestions.length > 0 && (
+                          <div className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] shadow-2xl text-left">
+                            {typeaheadSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                onClick={() => handleExecuteParcelSearch(undefined, suggestion)}
+                                type="button"
+                                className="w-full px-4 py-2.5 text-xs font-medium text-[rgba(237,243,234,0.85)] hover:bg-[#102119] hover:text-[#c8b97a] transition border-b border-[rgba(237,243,234,0.08)] last:border-b-0"
+                              >
+                                📍 {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={searchingParcel}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#88aa8f] px-7 py-3 text-sm font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-md disabled:opacity-50 shrink-0"
+                      >
+                        <Search className="h-4 w-4" />
+                        {searchingParcel ? 'Searching...' : 'Inspect parcel'}
+                      </button>
+                    </div>
+
+                    {commandSearchError && (
+                      <p className="text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
+                    )}
+
+                    {/* Quick-Link Address Pills */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[rgba(237,243,234,0.5)]">
+                        Demo Sites:
+                      </span>
+                      {[
+                        '639 N 25th St, Milwaukee, WI',
+                        '450 Auburn Ave NE, Atlanta, GA',
+                        '1901 E 7th Ave, Tampa, FL',
+                      ].map((pill) => (
                         <button
-                          key={suggestion}
-                          onClick={() => handleExecuteParcelSearch(undefined, suggestion)}
+                          key={pill}
+                          onClick={() => handleExecuteParcelSearch(undefined, pill)}
                           type="button"
-                          className="w-full px-4 py-2.5 text-xs font-medium text-[rgba(237,243,234,0.85)] hover:bg-[#102119] hover:text-[#c8b97a] transition border-b border-[rgba(237,243,234,0.08)] last:border-b-0"
+                          className="rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.03] px-3 py-1 text-xs font-medium text-[#c8b97a] hover:bg-white/[0.08] hover:text-white transition shadow-sm"
                         >
-                          📍 {suggestion}
+                          📍 {pill}
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={searchingParcel}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#88aa8f] px-7 py-3 text-sm font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-md disabled:opacity-50 shrink-0"
-                >
-                  <Search className="h-4 w-4" />
-                  {searchingParcel ? 'Searching...' : 'Inspect parcel'}
-                </button>
-              </div>
-
-              {commandSearchError && (
-                <p className="text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
-              )}
-
-              {/* Quick-Link Address Pills */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[rgba(237,243,234,0.5)]">
-                  Demo Sites:
-                </span>
-                {[
-                  '639 N 25th St, Milwaukee, WI',
-                  '450 Auburn Ave NE, Atlanta, GA',
-                  '1901 E 7th Ave, Tampa, FL',
-                ].map((pill) => (
-                  <button
-                    key={pill}
-                    onClick={() => handleExecuteParcelSearch(undefined, pill)}
-                    type="button"
-                    className="rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.03] px-3 py-1 text-xs font-medium text-[#c8b97a] hover:bg-white/[0.08] hover:text-white transition shadow-sm"
-                  >
-                    📍 {pill}
-                  </button>
-                ))}
-              </div>
-            </form>
-          )}
-
-          {/* MODE 2: Interactive Spatial Map Picker */}
-          {searchMode === 'map' && (
-            <div className="max-w-2xl mx-auto space-y-4">
-              <div className="relative h-64 w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.16)] bg-[#07100c] flex items-center justify-center p-4">
-                <svg className="h-full w-full opacity-40" viewBox="0 0 400 240">
-                  <rect width="400" height="240" fill="#0b1712" />
-                  <path d="M30 40 L370 30 L350 210 L50 200 Z" fill="#102119" stroke="#88aa8f" strokeWidth="1.5" />
-                  <polygon points="120,70 260,60 250,170 110,160" fill="#c8b97a" fillOpacity="0.15" stroke="#c8b97a" strokeWidth="2" strokeDasharray="5 3" />
-                </svg>
-
-                {/* Clickable Parcel Pin Markers */}
-                <div className="absolute inset-0 flex items-center justify-center gap-6 flex-wrap p-4">
-                  {[
-                    { name: 'Sanctuary Hub (Milwaukee)', coords: { lat: 43.0396, lng: -87.945 } },
-                    { name: 'Auburn Residency (Atlanta)', coords: { lat: 33.7554, lng: -84.3725 } },
-                    { name: 'Ybor Arts Lab (Tampa)', coords: { lat: 27.9602, lng: -82.4368 } },
-                  ].map((pin) => (
-                    <button
-                      key={pin.name}
-                      onClick={() => handleExecuteParcelSearch(undefined, undefined, pin.coords)}
-                      type="button"
-                      className="group flex flex-col items-center gap-1 rounded-2xl bg-[#102119]/90 border border-[#88aa8f]/40 p-3 shadow-lg hover:border-[#c8b97a] hover:bg-[#1b3327] transition"
-                    >
-                      <MapPin className="h-5 w-5 text-[#c8b97a] group-hover:scale-110 transition" />
-                      <span className="font-mono text-[10px] font-bold text-[#edf3ea]">{pin.name}</span>
-                      <span className="text-[9px] text-[#88aa8f]">Tap to Inspect →</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODE 3: Photo Metadata EXIF Extractor */}
-          {searchMode === 'photo' && (
-            <div className="max-w-xl mx-auto space-y-4">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handlePhotoUpload}
-                accept="image/*"
-                className="hidden"
-              />
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer rounded-3xl border-2 border-dashed border-[rgba(237,243,234,0.2)] bg-[#102119]/60 p-8 text-center space-y-3 hover:border-[#88aa8f] transition"
-              >
-                {photoPreview ? (
-                  <div className="space-y-3">
-                    <img src={photoPreview} alt="Site Photo" className="mx-auto h-40 rounded-2xl object-cover border border-white/20" />
-                    {extractedCoords ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-[11px] text-emerald-300">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> EXIF GPS Extracted: {extractedCoords.lat.toFixed(4)}, {extractedCoords.lng.toFixed(4)}
-                        </span>
-                        <div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleExecuteParcelSearch(undefined, undefined, extractedCoords)
-                            }}
-                            type="button"
-                            className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#88aa8f] px-6 py-2 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition"
-                          >
-                            Inspect Matched Parcel →
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-amber-300 font-mono">Parsing EXIF GPS metadata...</p>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <UploadCloud className="mx-auto h-10 w-10 text-[#c8b97a]" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-[#edf3ea]">
-                        Click to upload or take a site photo
-                      </p>
-                      <p className="text-xs text-[rgba(237,243,234,0.5)]">
-                        Supports JPEG, PNG with embedded GPS camera metadata.
-                      </p>
-                    </div>
-                  </>
+                  </form>
                 )}
-              </div>
-            </div>
-          )}
-        </section>
 
-        {/* Real-Time Opportunity Feed & Squads Component */}
-        <LiveOpportunityFeed user={user} onInspectSite={(addr) => handleExecuteParcelSearch(undefined, addr)} />
+                {/* MODE 2: Interactive Spatial Map Picker */}
+                {searchMode === 'map' && (
+                  <div className="max-w-2xl mx-auto space-y-4">
+                    <div className="relative h-64 w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.16)] bg-[#07100c] flex items-center justify-center p-4">
+                      <svg className="h-full w-full opacity-40" viewBox="0 0 400 240">
+                        <rect width="400" height="240" fill="#0b1712" />
+                        <path d="M30 40 L370 30 L350 210 L50 200 Z" fill="#102119" stroke="#88aa8f" strokeWidth="1.5" />
+                        <polygon points="120,70 260,60 250,170 110,160" fill="#c8b97a" fillOpacity="0.15" stroke="#c8b97a" strokeWidth="2" strokeDasharray="5 3" />
+                      </svg>
+
+                      {/* Clickable Parcel Pin Markers */}
+                      <div className="absolute inset-0 flex items-center justify-center gap-6 flex-wrap p-4">
+                        {[
+                          { name: 'Sanctuary Hub (Milwaukee)', coords: { lat: 43.0396, lng: -87.945 } },
+                          { name: 'Auburn Residency (Atlanta)', coords: { lat: 33.7554, lng: -84.3725 } },
+                          { name: 'Ybor Arts Lab (Tampa)', coords: { lat: 27.9602, lng: -82.4368 } },
+                        ].map((pin) => (
+                          <button
+                            key={pin.name}
+                            onClick={() => handleExecuteParcelSearch(undefined, undefined, pin.coords)}
+                            type="button"
+                            className="group flex flex-col items-center gap-1 rounded-2xl bg-[#102119]/90 border border-[#88aa8f]/40 p-3 shadow-lg hover:border-[#c8b97a] hover:bg-[#1b3327] transition"
+                          >
+                            <MapPin className="h-5 w-5 text-[#c8b97a] group-hover:scale-110 transition" />
+                            <span className="font-mono text-[10px] font-bold text-[#edf3ea]">{pin.name}</span>
+                            <span className="text-[9px] text-[#88aa8f]">Tap to Inspect →</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE 3: Photo Metadata EXIF Extractor */}
+                {searchMode === 'photo' && (
+                  <div className="max-w-xl mx-auto space-y-4">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handlePhotoUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="cursor-pointer rounded-3xl border-2 border-dashed border-[rgba(237,243,234,0.2)] bg-[#102119]/60 p-8 text-center space-y-3 hover:border-[#88aa8f] transition"
+                    >
+                      {photoPreview ? (
+                        <div className="space-y-3">
+                          <img src={photoPreview} alt="Site Photo" className="mx-auto h-40 rounded-2xl object-cover border border-white/20" />
+                          {extractedCoords ? (
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-[11px] text-emerald-300">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> EXIF GPS Extracted: {extractedCoords.lat.toFixed(4)}, {extractedCoords.lng.toFixed(4)}
+                              </span>
+                              <div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleExecuteParcelSearch(undefined, undefined, extractedCoords)
+                                  }}
+                                  type="button"
+                                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#88aa8f] px-6 py-2 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition"
+                                >
+                                  Inspect Matched Parcel →
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-amber-300 font-mono">Parsing EXIF GPS metadata...</p>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <UploadCloud className="mx-auto h-10 w-10 text-[#c8b97a]" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-[#edf3ea]">
+                              Click to upload or take a site photo
+                            </p>
+                            <p className="text-xs text-[rgba(237,243,234,0.5)]">
+                              Supports JPEG, PNG with embedded GPS camera metadata.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* VIEW B: Live Opportunity Stream & Project Squads */}
+            {activeConsoleView === 'squads' && (
+              <motion.div
+                key="squads-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <LiveOpportunityFeed user={user} onInspectSite={(addr) => handleExecuteParcelSearch(undefined, addr)} />
+              </motion.div>
+            )}
+
+            {/* VIEW C: Regional $1 Homestead Claim Engine */}
+            {activeConsoleView === 'homestead' && (
+              <motion.div
+                key="homestead-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <RegionalHomesteadEngine
+                  userRegion={userRegion}
+                  onSelectRegion={setUserRegion}
+                  onClaimHomestead={(city) => {
+                    setMatcherCity(city)
+                    setMatcherOpen(true)
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
 
         {/* 3. SECONDARY ENTRY POINTS ROW */}
         <section className="space-y-4">
@@ -724,6 +807,20 @@ export function ParticipantProfileWorkspace() {
           )}
         </section>
       </main>
+
+      {/* Edit Profile Modal Drawer */}
+      {editProfileOpen && (
+        <EditProfileModal
+          user={user}
+          currentRegion={userRegion}
+          onClose={() => setEditProfileOpen(false)}
+          onSaveProfile={(data) => {
+            setUserDisplayName(data.displayName)
+            setUserHandle(data.handle)
+            setUserRegion(data.region)
+          }}
+        />
+      )}
 
       {/* Property Matcher Modal ($1 Homestead Claim Flow) */}
       <PropertyMatcherModal
