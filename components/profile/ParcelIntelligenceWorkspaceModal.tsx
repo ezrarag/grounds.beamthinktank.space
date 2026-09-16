@@ -46,6 +46,8 @@ export function ParcelIntelligenceWorkspaceModal({
   const [grantMatches, setGrantMatches] = useState<{ totalGrantAllocation: number; matchedGrants: Array<{ id: string; programName: string; allocatedAmount: number; hourlyStipendMatch?: number }> } | null>(null)
   const [visualMode, setVisualMode] = useState<'street' | 'satellite'>('street')
   const [streetViewError, setStreetViewError] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [reviewRequestNotice, setReviewRequestNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (!parcel) return
@@ -133,9 +135,6 @@ export function ParcelIntelligenceWorkspaceModal({
       setSubmitting(false)
     }
   }
-
-  const [copiedLink, setCopiedLink] = useState(false)
-  const [reviewRequestNotice, setReviewRequestNotice] = useState<string | null>(null)
 
   function handleExportProjectBrief() {
     if (typeof window !== 'undefined') {
