@@ -538,15 +538,6 @@ export function ParticipantProfileWorkspace() {
                 <h1 className="font-serif text-xl font-medium tracking-tight text-[#edf3ea] sm:text-2xl">
                   {displayName}
                 </h1>
-                
-                {/* Refactored Interactive [ ⚙️ Edit Profile ] Pill Button */}
-                <button
-                  onClick={() => setEditProfileOpen(true)}
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#88aa8f]/15 border border-[#88aa8f]/30 px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#88aa8f] hover:bg-[#88aa8f]/25 hover:text-white transition shadow-sm"
-                >
-                  <Settings className="h-3 w-3" /> Edit Profile
-                </button>
               </div>
 
               {/* Dynamic Real-Time GPS Location Indicator */}
@@ -679,9 +670,36 @@ export function ParticipantProfileWorkspace() {
                 className="rounded-[28px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-8 shadow-2xl backdrop-blur-sm text-center space-y-6"
               >
                 <div className="space-y-3">
-                  <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
-                    REAL ESTATE INTELLIGENCE &amp; ACTUATION
-                  </span>
+                  {/* Gentle Recent Searches Pill Bar */}
+                  {searchHistory && searchHistory.length > 0 ? (
+                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.55)] flex items-center gap-1">
+                        <History className="h-3 w-3 text-[#c8b97a]" /> Recent Searches:
+                      </span>
+                      {searchHistory.slice(0, 5).map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setCommandSearchInput(item.query)
+                            if (item.mode === 'map') {
+                              setSearchMode('map')
+                            } else {
+                              handleExecuteParcelSearch(undefined, item.query)
+                            }
+                          }}
+                          type="button"
+                          className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-[#c8b97a] hover:bg-[#88aa8f]/20 hover:text-white transition shadow-sm"
+                        >
+                          <span>{item.mode === 'map' ? '🗺️' : '📍'}</span>
+                          <span className="truncate max-w-[150px]">{item.query}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
+                      SEARCH PARCELS &amp; MUNICIPAL LAND INVENTORY
+                    </span>
+                  )}
 
                   {/* Mode Switcher Tabs */}
                   <div className="flex justify-center gap-1.5 pt-1">

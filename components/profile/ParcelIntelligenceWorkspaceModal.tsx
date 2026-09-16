@@ -41,6 +41,8 @@ export function ParcelIntelligenceWorkspaceModal({
   const [tabledSuccess, setTabledSuccess] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [grantMatches, setGrantMatches] = useState<{ totalGrantAllocation: number; matchedGrants: Array<{ id: string; programName: string; allocatedAmount: number; hourlyStipendMatch?: number }> } | null>(null)
+  const [visualMode, setVisualMode] = useState<'street' | 'satellite'>('street')
+  const [streetViewError, setStreetViewError] = useState(false)
 
   useEffect(() => {
     if (!parcel) return
@@ -132,17 +134,25 @@ export function ParcelIntelligenceWorkspaceModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-2 sm:p-6 backdrop-blur-md flex justify-center items-start sm:items-center">
       <div className="relative my-2 sm:my-6 w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        {/* Sticky Header Bar */}
+        {/* Sticky Header Bar: Site Identity */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Compass className="h-6 w-6 text-slate-900" />
-              <h2 className="text-xl font-bold text-[#0f172a]">
-                BEAM Real Estate Intelligence &amp; Actuation Workspace
+              <MapPin className="h-5 w-5 text-emerald-600" />
+              <h2 className="text-xl font-bold text-[#0f172a] tracking-tight">
+                {parcel.address}
               </h2>
             </div>
-            <p className="text-xs font-mono text-slate-500">
-              TaxKey: <strong className="text-slate-800">{parcel.parcelId}</strong> • Source: {parcel.source}
+            <p className="text-xs font-mono text-slate-500 flex flex-wrap items-center gap-2">
+              <span>TaxKey: <strong className="text-slate-800">{parcel.parcelId}</strong></span>
+              <span>•</span>
+              <span className="text-emerald-700 font-semibold">Verified Parcel Boundary</span>
+              {parcel.lat && parcel.lng && (
+                <>
+                  <span>•</span>
+                  <span>({parcel.lat.toFixed(4)}° N, {parcel.lng.toFixed(4)}° W)</span>
+                </>
+              )}
             </p>
           </div>
 
@@ -226,29 +236,70 @@ export function ParcelIntelligenceWorkspaceModal({
         ) : (
           /* Split View Workspace Layout */
           <div className="grid gap-6 lg:grid-cols-12">
-          {/* LEFT SIDE: GIS Boundary Map, Zoning & Architectural Specs (5 cols) */}
+          {/* LEFT SIDE: Visual Confirmation & Property Profile (5 cols) */}
           <div className="lg:col-span-5 space-y-5">
-            {/* GIS Interactive Boundary View Card */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4">
+            {/* Visual Confirmation Card with Dual View Switcher */}
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1 text-[10px] font-mono uppercase font-bold text-sky-300">
-                  <MapPin className="h-3 w-3 text-sky-400" /> GIS Boundary Map View
-                </span>
+                {/* Visual View Switcher Buttons */}
+                <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700">
+                  <button
+                    onClick={() => setVisualMode('street')}
+                    type="button"
+                    className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                      visualMode === 'street'
+                        ? 'bg-sky-500 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    📸 Street View
+                  </button>
+                  <button
+                    onClick={() => setVisualMode('satellite')}
+                    type="button"
+                    className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                      visualMode === 'satellite'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    🌐 GIS Satellite
+                  </button>
+                </div>
+
                 <span className="text-[10px] font-mono text-slate-400">
                   {parcel.lat?.toFixed(4)}, {parcel.lng?.toFixed(4)}
                 </span>
               </div>
 
-              {/* Live Interactive Mapbox / Satellite Parcel Boundary Map */}
-              <div className="relative h-56 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
-                <PropertyVisualizer
-                  address={parcel.address}
-                  propertyId={parcel.parcelId}
-                  lat={parcel.lat}
-                  lng={parcel.lng}
-                  compact={true}
-                  className="h-full w-full"
-                />
+              {/* Visual Media Container */}
+              <div className="relative h-60 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
+                {visualMode === 'street' ? (
+                  !streetViewError ? (
+                    <img
+                      src={`/api/streetview?location=${encodeURIComponent(parcel.address || `${parcel.lat},${parcel.lng}`)}`}
+                      alt={`Street View of ${parcel.address}`}
+                      className="h-full w-full object-cover"
+                      onError={() => setStreetViewError(true)}
+                    />
+                  ) : (
+                    /* High-Res Static Satellite Imagery Fallback */
+                    <img
+                      src={`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/pin-s+0284c7(${parcel.lng || -87.945},${parcel.lat || 43.0396})/${parcel.lng || -87.945},${parcel.lat || 43.0396},17,0,0/600x300?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}`}
+                      alt={`Satellite View of ${parcel.address}`}
+                      className="h-full w-full object-cover"
+                    />
+                  )
+                ) : (
+                  <PropertyVisualizer
+                    address={parcel.address}
+                    propertyId={parcel.parcelId}
+                    lat={parcel.lat}
+                    lng={parcel.lng}
+                    compact={true}
+                    className="h-full w-full"
+                  />
+                )}
               </div>
 
               {/* Zoning & Lot Intelligence Badges */}
