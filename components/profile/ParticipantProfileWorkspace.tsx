@@ -77,12 +77,42 @@ export function ParticipantProfileWorkspace() {
   const [searchingParcel, setSearchingParcel] = useState(false)
   const [searchedParcelResult, setSearchedParcelResult] = useState<ParcelResult | null>(null)
   const [commandSearchError, setCommandSearchError] = useState<string | null>(null)
+  const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
-  async function handleExecuteParcelSearch(e: React.FormEvent) {
-    e.preventDefault()
-    const query = commandSearchInput.trim()
+  // 300ms Debounce effect for address autocomplete typeahead
+  useEffect(() => {
+    if (!commandSearchInput.trim() || commandSearchInput.trim().length < 2) {
+      setTypeaheadSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/parcel?typeahead=true&q=${encodeURIComponent(commandSearchInput.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data.suggestions)) {
+            setTypeaheadSuggestions(data.suggestions)
+            setShowSuggestions(data.suggestions.length > 0)
+          }
+        }
+      } catch {
+        // Silently ignore typeahead network failures
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [commandSearchInput])
+
+  async function handleExecuteParcelSearch(e?: React.FormEvent, overrideAddress?: string) {
+    if (e) e.preventDefault()
+    const query = (overrideAddress || commandSearchInput).trim()
     if (!query) return
 
+    setCommandSearchInput(query)
+    setShowSuggestions(false)
     setSearchingParcel(true)
     setCommandSearchError(null)
 
@@ -90,11 +120,7 @@ export function ParticipantProfileWorkspace() {
       const res = await fetch(`/api/parcel?q=${encodeURIComponent(query)}`)
       if (res.ok) {
         const data = (await res.json()) as ParcelResult
-        if (data.found) {
-          setSearchedParcelResult(data)
-        } else {
-          setCommandSearchError(`No parcel data found for "${query}".`)
-        }
+        setSearchedParcelResult(data)
       } else {
         setCommandSearchError('Unable to query parcel endpoint.')
       }
@@ -244,24 +270,63 @@ export function ParticipantProfileWorkspace() {
               </p>
             </div>
 
-            <form onSubmit={handleExecuteParcelSearch} className="flex gap-2 min-w-[320px] sm:min-w-[420px]">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={commandSearchInput}
-                  onChange={(e) => setCommandSearchInput(e.target.value)}
-                  placeholder="e.g. 639 N 25th St, 800 W Wells St, or 388-1204-000..."
-                  className="w-full rounded-full border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-medium text-white placeholder-slate-400 focus:border-emerald-400 focus:outline-none"
-                />
+            <form onSubmit={handleExecuteParcelSearch} className="flex flex-col gap-2 min-w-[320px] sm:min-w-[420px]">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={commandSearchInput}
+                    onChange={(e) => setCommandSearchInput(e.target.value)}
+                    onFocus={() => setShowSuggestions(typeaheadSuggestions.length > 0)}
+                    placeholder="e.g. 639 N 25th St, 450 Auburn Ave, or 1901 E 7th Ave..."
+                    className="w-full rounded-full border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-medium text-white placeholder-slate-400 focus:border-emerald-400 focus:outline-none"
+                  />
+
+                  {/* Autocomplete Dropdown Menu */}
+                  {showSuggestions && typeaheadSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-2xl">
+                      {typeaheadSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => handleExecuteParcelSearch(undefined, suggestion)}
+                          type="button"
+                          className="w-full px-4 py-2.5 text-left text-xs font-medium text-slate-200 hover:bg-slate-700 hover:text-emerald-400 transition border-b border-slate-700/50 last:border-b-0"
+                        >
+                          📍 {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={searchingParcel}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-500 transition shadow-md disabled:opacity-50 shrink-0"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  {searchingParcel ? 'Searching...' : 'Inspect Parcel'}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={searchingParcel}
-                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-500 transition shadow-md disabled:opacity-50"
-              >
-                <Search className="h-3.5 w-3.5" />
-                {searchingParcel ? 'Searching...' : 'Inspect Parcel'}
-              </button>
+
+              {/* Pre-populated Demo Address Quick-Links */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="font-mono text-[10px] text-slate-400 uppercase mr-1">Demo Quick-Links:</span>
+                {[
+                  '639 N 25th St, Milwaukee, WI',
+                  '450 Auburn Ave NE, Atlanta, GA',
+                  '1901 E 7th Ave, Tampa, FL',
+                ].map((pill) => (
+                  <button
+                    key={pill}
+                    onClick={() => handleExecuteParcelSearch(undefined, pill)}
+                    type="button"
+                    className="rounded-full border border-slate-700/80 bg-slate-800/80 px-2.5 py-0.5 text-[10px] font-medium text-emerald-300 hover:bg-slate-700 hover:text-white transition shadow-sm"
+                  >
+                    📍 {pill}
+                  </button>
+                ))}
+              </div>
             </form>
           </div>
 

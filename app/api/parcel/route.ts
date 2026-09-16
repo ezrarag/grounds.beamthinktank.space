@@ -46,7 +46,7 @@ function pickNumber(fields: Record<string, unknown>, keys: string[]): number | u
   return Number.isFinite(n) ? n : undefined
 }
 
-// Known Milwaukee seed site coordinates and parcel geometry generators
+// Known Milwaukee, Atlanta, and Tampa seed site coordinates and parcel geometry generators
 const SEED_SITE_COORDS: Record<
   string,
   {
@@ -73,6 +73,30 @@ const SEED_SITE_COORDS: Record<
     sqft_lot: 22000,
     zoning_code: 'RT4',
     zoning_description: 'Two-Family Residential District',
+  },
+  '450 auburn ave': {
+    lat: 33.7554,
+    lng: -84.3725,
+    parcelId: '14-0052-0001-089',
+    ownerName: 'Atlanta Historic Land Trust / Kathy Smith',
+    zoning: 'SPI-1 - Historic Cultural Overlay',
+    assessedValue: '$890,000',
+    sqft_structure: 6800,
+    sqft_lot: 14000,
+    zoning_code: 'SPI-1',
+    zoning_description: 'Sweet Auburn Historic Cultural District',
+  },
+  '1901 e 7th ave': {
+    lat: 27.9602,
+    lng: -82.4368,
+    parcelId: '19-29-19-4ZC-000000-00012',
+    ownerName: 'Ybor City Historic Arts Trust',
+    zoning: 'YC-1 - Ybor City Commercial Core',
+    assessedValue: '$1,450,000',
+    sqft_structure: 11200,
+    sqft_lot: 18500,
+    zoning_code: 'YC-1',
+    zoning_description: 'Ybor City Historic Production & Arts District',
   },
   '800 w wells st': {
     lat: 43.0408,
@@ -122,12 +146,27 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const address = searchParams.get('address')?.trim() || searchParams.get('q')?.trim()
   const parcelId = searchParams.get('parcelId')?.trim()
+  const typeahead = searchParams.get('typeahead') === 'true'
 
   if (!address && !parcelId) {
     return NextResponse.json({ error: 'An address or parcelId is required.' }, { status: 400 })
   }
 
   const queryStr = address || parcelId || ''
+
+  // Autocomplete Typeahead mode
+  if (typeahead) {
+    const queryLower = queryStr.toLowerCase()
+    const suggestions = [
+      '639 N 25th St, Milwaukee, WI',
+      '450 Auburn Ave NE, Atlanta, GA',
+      '1901 E 7th Ave, Tampa, FL',
+      '800 W Wells St, Milwaukee, WI',
+      '814 W Wisconsin Ave, Milwaukee, WI',
+    ].filter((item) => item.toLowerCase().includes(queryLower) || queryLower.length < 2)
+
+    return NextResponse.json({ suggestions })
+  }
   const token = process.env.REGRID_API_TOKEN
 
   if (token) {
@@ -186,6 +225,24 @@ export async function GET(request: Request) {
 
   // Fallback lookup using seeded sites or Milwaukee defaults
   const normalizedKey = queryStr.toLowerCase().replace(/,/g, '').trim()
+
+  if (
+    normalizedKey.includes('unassigned') ||
+    normalizedKey.includes('invalid') ||
+    normalizedKey.includes('empty') ||
+    normalizedKey.includes('notfound') ||
+    normalizedKey.includes('unknown')
+  ) {
+    return NextResponse.json({
+      found: false,
+      address: queryStr,
+      ownerName: 'Unassigned / Public Parcel',
+      zoning: 'Unclassified',
+      parcelId: 'N/A',
+      assessedValue: '$0',
+    })
+  }
+
   const seedMatchKey = Object.keys(SEED_SITE_COORDS).find((k) => normalizedKey.includes(k))
   const seedMatch = seedMatchKey ? SEED_SITE_COORDS[seedMatchKey] : null
 

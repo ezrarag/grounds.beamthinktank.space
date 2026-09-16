@@ -168,7 +168,7 @@ export function ParcelIntelligenceWorkspaceModal({
               🎉 Site Tabled Successfully!
             </p>
             <p className="text-xs text-emerald-700">
-              {parcel.address} has been submitted to the BEAM Site Acquisition &amp; Review Queue.
+              {targetParcel.address} has been submitted to the BEAM Site Acquisition &amp; Review Queue.
             </p>
           </div>
         )}
@@ -177,8 +177,42 @@ export function ParcelIntelligenceWorkspaceModal({
           <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-2xl">{message}</p>
         )}
 
-        {/* Split View Workspace Layout */}
-        <div className="grid gap-6 lg:grid-cols-12">
+        {/* Graceful Fallback State Card if Parcel Not Found */}
+        {!targetParcel.found ? (
+          <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-[#0f172a]">
+                No Official Parcel Record Found for &quot;{targetParcel.address}&quot;
+              </h3>
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
+                This site may be an unassigned lot or newly platted parcel. You can still table a custom site draft for BEAM operator review.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                onClick={onClose}
+                type="button"
+                className="rounded-full border border-slate-300 bg-white px-5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleTableGround}
+                disabled={submitting || tabledSuccess}
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-6 py-2 text-xs font-semibold text-white hover:bg-slate-900 shadow-md transition disabled:opacity-50"
+              >
+                <Send className="h-4 w-4 text-emerald-400" />
+                {tabledSuccess ? 'Custom Site Draft Tabled!' : 'Table Custom Site Draft'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Split View Workspace Layout */
+          <div className="grid gap-6 lg:grid-cols-12">
           {/* LEFT SIDE: GIS Boundary Map, Zoning & Architectural Specs (5 cols) */}
           <div className="lg:col-span-5 space-y-5">
             {/* GIS Interactive Boundary View Card */}
@@ -304,7 +338,7 @@ export function ParcelIntelligenceWorkspaceModal({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
                 <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
                   <span className="text-[9px] text-slate-400 block uppercase">Est. Valuation</span>
-                  <span className="font-extrabold text-[#0f172a] text-sm">{parcel.assessedValue}</span>
+                  <span className="font-extrabold text-[#0f172a] text-sm">{targetParcel.assessedValue}</span>
                 </div>
 
                 <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
@@ -331,9 +365,10 @@ export function ParcelIntelligenceWorkspaceModal({
             </div>
 
             {/* Integrated Acquisition & Team Assembly Module */}
-            <AcquisitionTeamModule parcel={parcel} user={user} />
+            <AcquisitionTeamModule parcel={targetParcel} user={user} />
           </div>
         </div>
+        )}
       </div>
     </div>
   )
