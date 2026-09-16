@@ -29,6 +29,7 @@ import {
   Flame,
   Home,
   User,
+  MessageSquare,
 } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -51,6 +52,7 @@ import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelInt
 import { LiveOpportunityFeed } from '@/components/profile/LiveOpportunityFeed'
 import { EditProfileModal, type UserTargetRegion } from '@/components/profile/EditProfileModal'
 import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
+import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
@@ -120,6 +122,13 @@ export function ParticipantProfileWorkspace() {
   const [workModalOpen, setWorkModalOpen] = useState(false)
   const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
   const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
+
+  // Header Dropdown Menu state
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
+
+  // Developer Feedback state
+  const [developerFeedbackEnabled, setDeveloperFeedbackEnabled] = useState(false)
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   
   const [commandSearchInput, setCommandSearchInput] = useState('')
   const [searchingParcel, setSearchingParcel] = useState(false)
@@ -190,7 +199,8 @@ export function ParticipantProfileWorkspace() {
     }
   }
 
-  // Photo EXIF parsing state
+  // Photo EXIF parsing state: Camera & Library input refs
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photoParsing, setPhotoParsing] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -290,6 +300,9 @@ export function ParticipantProfileWorkspace() {
           if (data.displayName) setUserDisplayName(data.displayName)
           if (data.handle) setUserHandle(data.handle)
           if (data.preferredRegion) setUserRegion(data.preferredRegion as UserTargetRegion)
+          if (typeof data.developerFeedbackEnabled === 'boolean') {
+            setDeveloperFeedbackEnabled(data.developerFeedbackEnabled)
+          }
           if (data.photoURL || data.headshotUrl || data.avatarUrl) {
             setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
           }
@@ -364,21 +377,116 @@ export function ParticipantProfileWorkspace() {
                   <Settings className="h-3 w-3" /> Edit Profile
                 </button>
               </div>
-              <p className="text-xs text-[rgba(237,243,234,0.6)] font-mono">
-                Verified Steward Node • Region: {userRegion === 'MKE' ? 'Milwaukee, WI' : userRegion === 'ATL' ? 'Atlanta, GA' : 'Tampa, FL'}
+
+              {/* Dynamic Real-Time GPS Location Indicator */}
+              <p className="text-xs text-[rgba(237,243,234,0.6)] font-mono flex items-center gap-1.5 pt-0.5">
+                <MapPin className="h-3 w-3 text-[#c8b97a]" />
+                {userCoords
+                  ? `GPS Location: ${userCoords.lat.toFixed(4)}° N, ${userCoords.lng.toFixed(4)}° W`
+                  : 'Detecting current physical location...'}
               </p>
             </div>
           </div>
 
-          {/* Clean Right-aligned Header Action Slot */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/portal/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(237,243,234,0.16)] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-[rgba(237,243,234,0.85)] hover:bg-white/[0.08] hover:text-white transition"
+          {/* Top-Right Header Dropdown Menu for Workspace Panels */}
+          <div className="relative">
+            <button
+              onClick={() => setHeaderMenuOpen((prev) => !prev)}
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-[rgba(237,243,234,0.18)] bg-[#102119]/80 px-4 py-2 text-xs font-semibold text-[#edf3ea] hover:bg-[#1b3327] hover:border-[#88aa8f] transition shadow-md"
             >
-              <Compass className="h-3.5 w-3.5 text-[#88aa8f]" />
-              Change my pathway
-            </Link>
+              <Layers className="h-3.5 w-3.5 text-[#88aa8f]" />
+              <span>Workspace Views &amp; Panels</span>
+              <ChevronDown className={`h-3.5 w-3.5 text-[#c8b97a] transition-transform ${headerMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {headerMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#0b1712] p-2 shadow-2xl space-y-1">
+                <div className="px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#c8b97a]">
+                  Stage Panels &amp; Secondary Views
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileTab('explore')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    profileTab === 'explore' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🏛️</span> Explore &amp; Table Sites
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileTab('roster')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    profileTab === 'roster' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>👷</span> My Work Rosters
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileTab('compliance')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    profileTab === 'compliance' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>⚖️</span> Stewardship &amp; Compliance
+                </button>
+
+                <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('squads')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'squads' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>⚡</span> Live Opportunities &amp; Squads
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('homestead')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'homestead' ? 'bg-[#88aa8f]/20 text-[#88aa8f] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>📍</span> Claim $1 Homestead Site
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('search')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'search' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🔍</span> Parcel Search Engine
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -406,7 +514,7 @@ export function ParticipantProfileWorkspace() {
                       [
                         { id: 'address', label: '🔍 Address Search', icon: Search },
                         { id: 'map', label: '🗺️ Interactive Map', icon: MapIcon },
-                        { id: 'photo', label: '📸 Upload Photo', icon: Camera },
+                        { id: 'photo', label: '📸 Take / Upload Photo', icon: Camera },
                       ] as const
                     ).map((mode) => (
                       <button
@@ -428,16 +536,16 @@ export function ParticipantProfileWorkspace() {
                     {searchMode === 'address'
                       ? 'Search Any Parcel or Site Worldwide'
                       : searchMode === 'map'
-                      ? 'Interactive Visual Parcel Boundary Map'
-                      : 'Upload Site Photo with EXIF Geotag Extraction'}
+                      ? 'Embedded Interactive Google / Apple Maps Viewer'
+                      : 'Take Photo or Upload EXIF Geotag Image'}
                   </h2>
 
                   <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
                     {searchMode === 'address'
                       ? 'Enter any street address, tax key, or site name to run instant Regrid parcel boundary lookup, zoning intelligence, financial pro-forma, and team assembly.'
                       : searchMode === 'map'
-                      ? 'Tap any parcel pin directly on the spatial map to inspect Regrid tax records, zoning codes, and structural rehab models.'
-                      : 'Upload or snap a photo of any vacant lot. Auto-extract GPS metadata coordinates to instantly locate and inspect the parcel.'}
+                      ? 'Pan, zoom, and select locations directly inside the embedded Google Maps interactive viewer or open deep links.'
+                      : 'Take a photo directly with your camera or upload a site image. Auto-extract GPS metadata coordinates to locate the parcel.'}
                   </p>
                 </div>
 
@@ -509,32 +617,34 @@ export function ParticipantProfileWorkspace() {
                   </form>
                 )}
 
-                {/* MODE 2: Interactive Spatial Map Picker with Geolocation & Apple/Google Maps */}
+                {/* MODE 2: Embedded Interactive Spatial Map Viewer */}
                 {searchMode === 'map' && (
-                  <div className="max-w-2xl mx-auto space-y-4">
-                    {/* Geolocation Live Coordinates Bar */}
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    {/* Map Controls & Geolocation Status Bar */}
                     <div className="rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119]/90 p-4 space-y-3 text-left">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-[#c8b97a]" />
                           <span className="font-mono text-xs font-bold text-[#edf3ea]">
                             {userCoords
-                              ? `GPS Location: ${userCoords.lat.toFixed(4)}° N, ${userCoords.lng.toFixed(4)}° W`
+                              ? `GPS Coordinates: ${userCoords.lat.toFixed(4)}° N, ${userCoords.lng.toFixed(4)}° W`
                               : geoLocating
                               ? 'Fetching browser GPS coordinates...'
-                              : 'Location detected (Default Milwaukee Node)'}
+                              : 'Location detected (Milwaukee Center Node)'}
                           </span>
                         </div>
 
-                        <button
-                          onClick={requestUserLocation}
-                          disabled={geoLocating}
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.16)] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-[#88aa8f] hover:bg-white/10 transition shrink-0"
-                        >
-                          <Compass className={`h-3 w-3 ${geoLocating ? 'animate-spin' : ''}`} />
-                          {geoLocating ? 'Locating...' : 'Detect My Location'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={requestUserLocation}
+                            disabled={geoLocating}
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.16)] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-[#88aa8f] hover:bg-white/10 transition"
+                          >
+                            <Compass className={`h-3 w-3 ${geoLocating ? 'animate-spin' : ''}`} />
+                            {geoLocating ? 'Locating...' : 'Detect My Location'}
+                          </button>
+                        </div>
                       </div>
 
                       {geoError && (
@@ -543,14 +653,11 @@ export function ParticipantProfileWorkspace() {
                         </p>
                       )}
 
-                      {/* Map External Deep Links (Apple Maps & Google Maps) */}
-                      {userCoords && (
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[rgba(237,243,234,0.08)]">
-                          <span className="font-mono text-[10px] uppercase text-[rgba(237,243,234,0.5)]">
-                            Launch Maps App:
-                          </span>
+                      {/* External Map Deep-Links & Quick Actions */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(237,243,234,0.08)]">
+                        <div className="flex items-center gap-2">
                           <a
-                            href={`https://maps.apple.com/?q=${userCoords.lat},${userCoords.lng}&ll=${userCoords.lat},${userCoords.lng}`}
+                            href={`https://maps.apple.com/?q=${userCoords?.lat || 43.0396},${userCoords?.lng || -87.945}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:text-white transition"
@@ -558,61 +665,78 @@ export function ParticipantProfileWorkspace() {
                             🍎 Open in Apple Maps <ExternalLink className="h-3 w-3 opacity-60" />
                           </a>
                           <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${userCoords.lat},${userCoords.lng}`}
+                            href={`https://www.google.com/maps/search/?api=1&query=${userCoords?.lat || 43.0396},${userCoords?.lng || -87.945}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 rounded-full border border-emerald-800/50 bg-emerald-950/60 px-3 py-1 text-xs font-semibold text-emerald-200 hover:border-emerald-600 hover:text-white transition"
                           >
                             🌐 Open in Google Maps <ExternalLink className="h-3 w-3 opacity-60" />
                           </a>
+                        </div>
+
+                        {userCoords && (
                           <button
                             onClick={() => handleExecuteParcelSearch(undefined, undefined, userCoords)}
                             type="button"
-                            className="inline-flex items-center gap-1 rounded-full bg-[#88aa8f] px-3 py-1 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-sm ml-auto"
+                            className="inline-flex items-center gap-1 rounded-full bg-[#88aa8f] px-3.5 py-1 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-sm"
                           >
                             <Search className="h-3 w-3" /> Inspect Local Parcel →
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
-                    <div className="relative h-64 w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.16)] bg-[#07100c] flex items-center justify-center p-4">
-                      <svg className="h-full w-full opacity-40" viewBox="0 0 400 240">
-                        <rect width="400" height="240" fill="#0b1712" />
-                        <path d="M30 40 L370 30 L350 210 L50 200 Z" fill="#102119" stroke="#88aa8f" strokeWidth="1.5" />
-                        <polygon points="120,70 260,60 250,170 110,160" fill="#c8b97a" fillOpacity="0.15" stroke="#c8b97a" strokeWidth="2" strokeDasharray="5 3" />
-                      </svg>
+                    {/* Embedded Interactive Google Map iFrame Frame */}
+                    <div className="relative h-80 w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.18)] bg-[#07100c] shadow-2xl">
+                      <iframe
+                        title="Embedded Interactive Google Map"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://maps.google.com/maps?q=${userCoords ? `${userCoords.lat},${userCoords.lng}` : '43.0389,-87.9065'}&z=15&output=embed`}
+                        className="w-full h-full grayscale-[25%] contrast-[110%] rounded-3xl"
+                      />
+                    </div>
 
-                      {/* Clickable Parcel Pin Markers */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-6 flex-wrap p-4">
-                        {[
-                          { name: 'Your Location Pin', coords: userCoords || { lat: 43.0396, lng: -87.945 }, isUser: true },
-                          { name: 'Sanctuary Hub (MKE)', coords: { lat: 43.0396, lng: -87.945 } },
-                          { name: 'Auburn Residency (ATL)', coords: { lat: 33.7554, lng: -84.3725 } },
-                        ].map((pin, idx) => (
-                          <button
-                            key={`${pin.name}-${idx}`}
-                            onClick={() => handleExecuteParcelSearch(undefined, undefined, pin.coords)}
-                            type="button"
-                            className={`group flex flex-col items-center gap-1 rounded-2xl border p-3 shadow-lg transition ${
-                              pin.isUser
-                                ? 'bg-amber-950/80 border-amber-400/60 hover:bg-amber-900'
-                                : 'bg-[#102119]/90 border-[#88aa8f]/40 hover:border-[#c8b97a] hover:bg-[#1b3327]'
-                            }`}
-                          >
-                            <MapPin className={`h-5 w-5 group-hover:scale-110 transition ${pin.isUser ? 'text-amber-300 animate-bounce' : 'text-[#c8b97a]'}`} />
-                            <span className="font-mono text-[10px] font-bold text-[#edf3ea]">{pin.name}</span>
-                            <span className="text-[9px] text-[#88aa8f]">Tap to Inspect →</span>
-                          </button>
-                        ))}
-                      </div>
+                    {/* Clickable Quick Target Node Pins */}
+                    <div className="flex flex-wrap justify-center gap-2 pt-1">
+                      {[
+                        { name: 'Sanctuary Hub (Milwaukee)', coords: { lat: 43.0396, lng: -87.945 } },
+                        { name: 'Auburn Residency (Atlanta)', coords: { lat: 33.7554, lng: -84.3725 } },
+                        { name: 'Ybor Arts Lab (Tampa)', coords: { lat: 27.9602, lng: -82.4368 } },
+                      ].map((pin) => (
+                        <button
+                          key={pin.name}
+                          onClick={() => {
+                            setUserCoords(pin.coords)
+                            handleExecuteParcelSearch(undefined, undefined, pin.coords)
+                          }}
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(237,243,234,0.14)] bg-[#102119] px-3 py-1.5 text-xs font-semibold text-[#c8b97a] hover:bg-[#1b3327] transition"
+                        >
+                          <MapPin className="h-3.5 w-3.5 text-[#88aa8f]" />
+                          {pin.name}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* MODE 3: Photo Metadata EXIF Extractor */}
+                {/* MODE 3: Photo Metadata EXIF Extractor with Take Photo & Upload Photo options */}
                 {searchMode === 'photo' && (
                   <div className="max-w-xl mx-auto space-y-4">
+                    {/* Hidden inputs: One for Camera capture, One for File upload */}
+                    <input
+                      type="file"
+                      ref={cameraInputRef}
+                      onChange={handlePhotoUpload}
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                    />
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -621,13 +745,30 @@ export function ParticipantProfileWorkspace() {
                       className="hidden"
                     />
 
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="cursor-pointer rounded-3xl border-2 border-dashed border-[rgba(237,243,234,0.2)] bg-[#102119]/60 p-8 text-center space-y-3 hover:border-[#88aa8f] transition"
-                    >
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        onClick={() => cameraInputRef.current?.click()}
+                        type="button"
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#88aa8f] px-5 py-3.5 text-xs font-bold text-[#07100c] hover:bg-[#77997e] transition shadow-md"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo with Camera
+                      </button>
+
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        type="button"
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(237,243,234,0.18)] bg-white/[0.04] px-5 py-3.5 text-xs font-bold text-[#edf3ea] hover:bg-white/[0.08] transition shadow-md"
+                      >
+                        <UploadCloud className="h-4 w-4 text-[#c8b97a]" />
+                        Upload Photo from Library
+                      </button>
+                    </div>
+
+                    <div className="rounded-3xl border-2 border-dashed border-[rgba(237,243,234,0.2)] bg-[#102119]/60 p-6 text-center space-y-3">
                       {photoPreview ? (
                         <div className="space-y-3">
-                          <img src={photoPreview} alt="Site Photo" className="mx-auto h-40 rounded-2xl object-cover border border-white/20" />
+                          <img src={photoPreview} alt="Site Photo" className="mx-auto h-44 rounded-2xl object-cover border border-white/20" />
                           {extractedCoords ? (
                             <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-[11px] text-emerald-300">
@@ -651,17 +792,14 @@ export function ParticipantProfileWorkspace() {
                           )}
                         </div>
                       ) : (
-                        <>
-                          <UploadCloud className="mx-auto h-10 w-10 text-[#c8b97a]" />
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-[#edf3ea]">
-                              Click to upload or take a site photo
-                            </p>
-                            <p className="text-xs text-[rgba(237,243,234,0.5)]">
-                              Supports JPEG, PNG with embedded GPS camera metadata.
-                            </p>
-                          </div>
-                        </>
+                        <div className="space-y-1 py-4">
+                          <p className="text-sm font-medium text-[#edf3ea]">
+                            Snap or upload a site photo of any lot or building
+                          </p>
+                          <p className="text-xs text-[rgba(237,243,234,0.5)]">
+                            Automatically extracts embedded GPS camera metadata to locate and underwrite the parcel.
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -704,48 +842,9 @@ export function ParticipantProfileWorkspace() {
           </AnimatePresence>
         </section>
 
-        {/* 3. SECONDARY ENTRY POINTS ROW */}
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-center gap-3 border-y border-[rgba(237,243,234,0.12)] py-4">
-            <button
-              onClick={() => toggleTab('explore')}
-              type="button"
-              className={`rounded-full px-5 py-2 text-xs font-semibold tracking-wide transition ${
-                profileTab === 'explore'
-                  ? 'border border-[#88aa8f] bg-[#88aa8f]/20 text-[#edf3ea] shadow-sm'
-                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
-              }`}
-            >
-              Explore &amp; table sites {profileTab === 'explore' ? '▲' : '▼'}
-            </button>
-
-            <button
-              onClick={() => toggleTab('roster')}
-              type="button"
-              className={`rounded-full px-5 py-2 text-xs font-semibold tracking-wide transition ${
-                profileTab === 'roster'
-                  ? 'border border-[#88aa8f] bg-[#88aa8f]/20 text-[#edf3ea] shadow-sm'
-                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
-              }`}
-            >
-              My work rosters {profileTab === 'roster' ? '▲' : '▼'}
-            </button>
-
-            <button
-              onClick={() => toggleTab('compliance')}
-              type="button"
-              className={`rounded-full px-5 py-2 text-xs font-semibold tracking-wide transition ${
-                profileTab === 'compliance'
-                  ? 'border border-[#88aa8f] bg-[#88aa8f]/20 text-[#edf3ea] shadow-sm'
-                  : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
-              }`}
-            >
-              Stewardship &amp; compliance {profileTab === 'compliance' ? '▲' : '▼'}
-            </button>
-          </div>
-
-          {/* 4. EXPANDABLE PANELS (Closed by default, only one open at a time) */}
-          {profileTab && (
+        {/* 3. EXPANDABLE PANELS (Triggered via Top-Right Header Dropdown Menu) */}
+        {profileTab && (
+          <section className="space-y-4">
             <div className="rounded-[24px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-6 shadow-xl backdrop-blur-sm space-y-4">
               
               {/* PANEL 1: EXPLORE & TABLE SITES */}
@@ -755,7 +854,13 @@ export function ParticipantProfileWorkspace() {
                     <h3 className="font-serif text-lg font-medium text-[#edf3ea]">
                       BEAM Site Acquisition Pipeline &amp; Candidates ({liveAssets.length})
                     </h3>
-                    <span className="font-mono text-[10px] uppercase text-[#c8b97a]">Track A / B / C / D Pipeline</span>
+                    <button
+                      onClick={() => setProfileTab(null)}
+                      type="button"
+                      className="text-xs text-[rgba(237,243,234,0.5)] hover:text-white"
+                    >
+                      Close Panel ✕
+                    </button>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -813,6 +918,13 @@ export function ParticipantProfileWorkspace() {
                     <h3 className="font-serif text-lg font-medium text-[#edf3ea]">
                       My Site Work &amp; Revitalization Rosters
                     </h3>
+                    <button
+                      onClick={() => setProfileTab(null)}
+                      type="button"
+                      className="text-xs text-[rgba(237,243,234,0.5)] hover:text-white"
+                    >
+                      Close Panel ✕
+                    </button>
                   </div>
 
                   {workRosterSites.length > 0 ? (
@@ -891,15 +1003,24 @@ export function ParticipantProfileWorkspace() {
                       </p>
                     </div>
 
-                    <button
-                      onClick={handleSyncCivicData}
-                      disabled={civicSyncing}
-                      type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#88aa8f]/40 bg-[#88aa8f]/10 px-4 py-1.5 text-xs font-semibold text-[#edf3ea] hover:bg-[#88aa8f]/20 transition shrink-0"
-                    >
-                      <Sparkles className={`h-3.5 w-3.5 text-[#c8b97a] ${civicSyncing ? 'animate-spin' : ''}`} />
-                      {civicSyncing ? 'Syncing Portal...' : 'Sync Live Municipal Data'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSyncCivicData}
+                        disabled={civicSyncing}
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#88aa8f]/40 bg-[#88aa8f]/10 px-4 py-1.5 text-xs font-semibold text-[#edf3ea] hover:bg-[#88aa8f]/20 transition shrink-0"
+                      >
+                        <Sparkles className={`h-3.5 w-3.5 text-[#c8b97a] ${civicSyncing ? 'animate-spin' : ''}`} />
+                        {civicSyncing ? 'Syncing Portal...' : 'Sync Live Municipal Data'}
+                      </button>
+                      <button
+                        onClick={() => setProfileTab(null)}
+                        type="button"
+                        className="text-xs text-[rgba(237,243,234,0.5)] hover:text-white"
+                      >
+                        Close Panel ✕
+                      </button>
+                    </div>
                   </div>
 
                   {civicSourceLabel && (
@@ -938,20 +1059,43 @@ export function ParticipantProfileWorkspace() {
                 </div>
               )}
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </main>
+
+      {/* Floating Developer Feedback Trigger Button */}
+      {developerFeedbackEnabled && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button
+            onClick={() => setFeedbackModalOpen(true)}
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/20 px-4 py-2.5 font-mono text-xs font-bold text-amber-300 hover:bg-amber-500/30 hover:border-amber-400 transition shadow-2xl backdrop-blur-md"
+          >
+            <MessageSquare className="h-4 w-4 text-amber-400" />
+            <span>Report Issue to Forge</span>
+          </button>
+        </div>
+      )}
+
+      {/* Developer Feedback Modal */}
+      <ForgeDeveloperFeedbackModal
+        user={user}
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
 
       {/* Edit Profile Modal Drawer */}
       {editProfileOpen && (
         <EditProfileModal
           user={user}
           currentRegion={userRegion}
+          developerFeedbackEnabled={developerFeedbackEnabled}
           onClose={() => setEditProfileOpen(false)}
           onSaveProfile={(data) => {
             setUserDisplayName(data.displayName)
             setUserHandle(data.handle)
             setUserRegion(data.region)
+            setDeveloperFeedbackEnabled(data.developerFeedbackEnabled)
           }}
           onNavigateView={(view) => setActiveConsoleView(view)}
         />

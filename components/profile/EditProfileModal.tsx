@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { X, User, MapPin, CheckCircle2, Save, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
+import { X, User, MapPin, CheckCircle2, Save, Compass, MessageSquareCode } from 'lucide-react'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -11,14 +12,16 @@ export type ConsoleViewMode = 'search' | 'squads' | 'homestead'
 interface EditProfileModalProps {
   user: { uid?: string; displayName?: string | null; email?: string | null } | null
   currentRegion: UserTargetRegion
+  developerFeedbackEnabled: boolean
   onClose: () => void
-  onSaveProfile: (data: { displayName: string; handle: string; region: UserTargetRegion; bio: string }) => void
+  onSaveProfile: (data: { displayName: string; handle: string; region: UserTargetRegion; bio: string; developerFeedbackEnabled: boolean }) => void
   onNavigateView?: (view: ConsoleViewMode) => void
 }
 
 export function EditProfileModal({
   user,
   currentRegion,
+  developerFeedbackEnabled,
   onClose,
   onSaveProfile,
   onNavigateView,
@@ -29,6 +32,7 @@ export function EditProfileModal({
   )
   const [region, setRegion] = useState<UserTargetRegion>(currentRegion)
   const [bio, setBio] = useState('Musician & civic space steward focused on residency and adaptive reuse.')
+  const [devMode, setDevMode] = useState<boolean>(developerFeedbackEnabled)
   const [saving, setSaving] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -47,6 +51,7 @@ export function EditProfileModal({
             handle: handle.trim(),
             preferredRegion: region,
             bio: bio.trim(),
+            developerFeedbackEnabled: devMode,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
@@ -58,6 +63,7 @@ export function EditProfileModal({
         handle: handle.trim(),
         region,
         bio: bio.trim(),
+        developerFeedbackEnabled: devMode,
       })
 
       setSavedSuccess(true)
@@ -95,7 +101,25 @@ export function EditProfileModal({
             <p className="font-serif text-base text-[#edf3ea]">Profile Preferences Updated!</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-5 max-h-[80vh] overflow-y-auto pr-1">
+            {/* Quick Navigation: Change My Pathway */}
+            <div className="rounded-2xl border border-[#88aa8f]/30 bg-[#88aa8f]/10 p-3.5 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#c8b97a]">
+                  Portal Pathway Switcher
+                </span>
+                <p className="text-xs text-[rgba(237,243,234,0.8)] font-medium">Return to BEAM Dashboard</p>
+              </div>
+              <Link
+                href="/portal/dashboard"
+                onClick={onClose}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#88aa8f] px-4 py-2 text-xs font-semibold text-[#07100c] hover:bg-[#77997e] transition shadow-md"
+              >
+                <Compass className="h-3.5 w-3.5" />
+                Change my pathway →
+              </Link>
+            </div>
+
             {/* Quick Workspace Navigation Options Drawer */}
             {onNavigateView && (
               <div className="rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119]/80 p-4 space-y-2.5">
@@ -214,6 +238,26 @@ export function EditProfileModal({
                   rows={2}
                   className="w-full rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119] px-4 py-2 text-xs text-[#edf3ea] focus:border-[#88aa8f] focus:outline-none"
                 />
+              </div>
+
+              {/* Developer Feedback & Forge Echo Toggle Option */}
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquareCode className="h-4 w-4 text-amber-400" />
+                    <span className="font-mono text-xs font-bold text-amber-300">Developer Feedback &amp; Forge Echo</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="devModeToggle"
+                    checked={devMode}
+                    onChange={(e) => setDevMode(e.target.checked)}
+                    className="h-4 w-4 rounded border-amber-400 text-[#88aa8f] focus:ring-0"
+                  />
+                </div>
+                <p className="text-[11px] text-[rgba(237,243,234,0.7)] leading-relaxed">
+                  Enable developer feedback mode to submit comments and screenshots directly to <code className="text-amber-200">forge.beamthinktank.space</code> for issue resolution across BEAM divisions.
+                </p>
               </div>
 
               {errorMsg && (
