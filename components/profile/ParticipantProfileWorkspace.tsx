@@ -356,6 +356,33 @@ export function ParticipantProfileWorkspace() {
     }
   }, [commandSearchInput])
 
+  // Helper to deduplicate history entries by TaxKey, Address, or Query string
+  function deduplicateSearchHistory(items: SearchHistoryItem[]): SearchHistoryItem[] {
+    const seenTaxkeys = new Set<string>()
+    const seenAddresses = new Set<string>()
+    const seenQueries = new Set<string>()
+
+    const result: SearchHistoryItem[] = []
+
+    for (const item of items) {
+      const taxkey = item.taxkey?.trim()
+      const addr = (item.address || item.query)?.toLowerCase().trim()
+      const q = item.query?.toLowerCase().trim()
+
+      if (taxkey && seenTaxkeys.has(taxkey)) continue
+      if (addr && seenAddresses.has(addr)) continue
+      if (q && seenQueries.has(q)) continue
+
+      if (taxkey) seenTaxkeys.add(taxkey)
+      if (addr) seenAddresses.add(addr)
+      if (q) seenQueries.add(q)
+
+      result.push(item)
+    }
+
+    return result.slice(0, 15)
+  }
+
   // Save search entry to Firebase Firestore & local state history
   async function recordSearchHistory(queryStr: string, mode: SearchMode, parcelData?: ParcelResult) {
     const newItem: SearchHistoryItem = {
@@ -370,19 +397,19 @@ export function ParticipantProfileWorkspace() {
       timestamp: new Date().toISOString(),
     }
 
-    setSearchHistory((prev) => [newItem, ...prev.filter((h) => h.query !== queryStr)].slice(0, 15))
+    setSearchHistory((prev) => {
+      const updatedList = deduplicateSearchHistory([newItem, ...prev])
 
-    if (user?.uid && db) {
-      try {
-        await setDoc(
+      if (user?.uid && db) {
+        void setDoc(
           doc(db, 'participantProfiles', user.uid),
-          { searchHistory: arrayUnion(newItem) },
+          { searchHistory: updatedList },
           { merge: true }
-        )
-      } catch (err) {
-        console.warn('Unable to record search history to Firestore:', err)
+        ).catch((err) => console.warn('Unable to record search history to Firestore:', err))
       }
-    }
+
+      return updatedList
+    })
   }
 
   function handleReinspectHistoryItem(item: SearchHistoryItem) {
@@ -523,7 +550,7 @@ export function ParticipantProfileWorkspace() {
             setDeveloperFeedbackEnabled(data.developerFeedbackEnabled)
           }
           if (Array.isArray(data.searchHistory)) {
-            setSearchHistory(data.searchHistory as SearchHistoryItem[])
+            setSearchHistory(deduplicateSearchHistory(data.searchHistory as SearchHistoryItem[]))
           }
           if (data.photoURL || data.headshotUrl || data.avatarUrl) {
             setFirestorePhoto(data.photoURL || data.headshotUrl || data.avatarUrl)
