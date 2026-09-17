@@ -328,14 +328,14 @@ export function ParcelIntelligenceWorkspaceModal({
           <div className="lg:col-span-5 space-y-5">
             {/* Visual Confirmation Card with Multi-View Switcher */}
             <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-3">
                 {/* Visual View Switcher Buttons */}
-                <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700">
+                <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700 shadow-inner">
                   {uploadedPhotoUrl && (
                     <button
                       onClick={() => setVisualMode('uploaded')}
                       type="button"
-                      className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
                         visualMode === 'uploaded'
                           ? 'bg-amber-500 text-slate-950 shadow-sm'
                           : 'text-slate-300 hover:text-white'
@@ -347,7 +347,7 @@ export function ParcelIntelligenceWorkspaceModal({
                   <button
                     onClick={() => setVisualMode('street')}
                     type="button"
-                    className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
                       visualMode === 'street'
                         ? 'bg-sky-500 text-white shadow-sm'
                         : 'text-slate-300 hover:text-white'
@@ -358,7 +358,7 @@ export function ParcelIntelligenceWorkspaceModal({
                   <button
                     onClick={() => setVisualMode('satellite')}
                     type="button"
-                    className={`rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase transition ${
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
                       visualMode === 'satellite'
                         ? 'bg-emerald-600 text-white shadow-sm'
                         : 'text-slate-300 hover:text-white'
@@ -368,13 +368,16 @@ export function ParcelIntelligenceWorkspaceModal({
                   </button>
                 </div>
 
-                <span className="text-[10px] font-mono text-slate-400">
-                  {parcel.lat?.toFixed(4)}, {parcel.lng?.toFixed(4)}
-                </span>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/90 border border-slate-700 px-2.5 py-1 text-[10px] font-mono text-slate-300 shadow-sm">
+                    <MapPin className="h-3 w-3 text-emerald-400" />
+                    {parcel.lat?.toFixed(4)}, {parcel.lng?.toFixed(4)}
+                  </span>
+                </div>
               </div>
 
               {/* Visual Media Container */}
-              <div className="relative h-60 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
+              <div className="relative h-80 sm:h-[340px] w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
                 {visualMode === 'uploaded' && uploadedPhotoUrl ? (
                   <div className="relative h-full w-full overflow-hidden bg-slate-950 flex items-center justify-center">
                     <img
@@ -390,7 +393,11 @@ export function ParcelIntelligenceWorkspaceModal({
                 ) : visualMode === 'street' ? (
                   !streetViewError ? (
                     <img
-                      src={`/api/streetview?location=${encodeURIComponent(parcel.address || `${parcel.lat},${parcel.lng}`)}`}
+                      src={`/api/streetview?location=${encodeURIComponent(
+                        parcel.lat && parcel.lng
+                          ? `${parcel.lat},${parcel.lng}`
+                          : `${parcel.address || ''}, Milwaukee, WI`
+                      )}`}
                       alt={`Street View of ${parcel.address}`}
                       className="h-full w-full object-cover"
                       onError={() => setStreetViewError(true)}

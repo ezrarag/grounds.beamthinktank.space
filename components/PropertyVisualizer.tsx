@@ -248,67 +248,91 @@ export function PropertyVisualizer({
   return (
     <div
       className={`relative overflow-hidden rounded-[2rem] border border-white/12 bg-[#091510] text-white shadow-2xl transition-all duration-300 ${
-        isExpanded ? 'fixed inset-4 z-50 rounded-[2.5rem]' : className
+        isExpanded ? 'fixed inset-4 z-50 rounded-[2.5rem]' : compact ? 'h-full w-full rounded-2xl' : className
       }`}
     >
-      {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0d1c16]/90 px-5 py-4 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-grounds-sand/30 bg-grounds-sand/15 text-grounds-sand">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-white sm:text-lg">
-                {propertyName || parcelData?.address || address}
-              </h3>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200">
-                <ShieldCheck className="h-3 w-3" /> 3D Parcel Geometry
-              </span>
+      {/* Header Bar (Hidden in compact mode) */}
+      {!compact && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0d1c16]/90 px-5 py-4 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-grounds-sand/30 bg-grounds-sand/15 text-grounds-sand">
+              <Building2 className="h-5 w-5" />
             </div>
-            <p className="text-xs text-white/60">{address}</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-white sm:text-lg">
+                  {propertyName || parcelData?.address || address}
+                </h3>
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200">
+                  <ShieldCheck className="h-3 w-3" /> 3D Parcel Geometry
+                </span>
+              </div>
+              <p className="text-xs text-white/60">{address}</p>
+            </div>
+          </div>
+
+          {/* View Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIs3DMode(!is3DMode)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                is3DMode
+                  ? 'border-grounds-sand/50 bg-grounds-sand/15 text-grounds-sand'
+                  : 'border-white/15 bg-white/5 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <Compass className={`h-3.5 w-3.5 transition-transform ${is3DMode ? 'rotate-45' : ''}`} />
+              {is3DMode ? '3D View' : '2D Map'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMapStyle(mapStyle === 'dark' ? 'satellite' : 'dark')}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              {mapStyle === 'dark' ? 'Satellite' : 'Vector Dark'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/70 transition hover:bg-white/10"
+              title={isExpanded ? 'Exit full screen' : 'Expand full screen'}
+            >
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
           </div>
         </div>
-
-        {/* View Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIs3DMode(!is3DMode)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-              is3DMode
-                ? 'border-grounds-sand/50 bg-grounds-sand/15 text-grounds-sand'
-                : 'border-white/15 bg-white/5 text-white/70 hover:bg-white/10'
-            }`}
-          >
-            <Compass className={`h-3.5 w-3.5 transition-transform ${is3DMode ? 'rotate-45' : ''}`} />
-            {is3DMode ? '3D View' : '2D Map'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMapStyle(mapStyle === 'dark' ? 'satellite' : 'dark')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            {mapStyle === 'dark' ? 'Satellite' : 'Vector Dark'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/70 transition hover:bg-white/10"
-            title={isExpanded ? 'Exit full screen' : 'Expand full screen'}
-          >
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Main Viewport Container */}
-      <div className={`relative w-full ${isExpanded ? 'h-[calc(100%-80px)]' : compact ? 'h-[340px]' : 'h-[480px]'}`}>
+      <div className={`relative w-full ${isExpanded ? 'h-[calc(100%-80px)]' : compact ? 'h-full' : 'h-[480px]'}`}>
         {/* Mapbox Canvas */}
         <div ref={mapContainerRef} className="h-full w-full bg-[#07110c]" />
+
+        {/* Compact Mode Floating Quick Controls */}
+        {compact && (
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIs3DMode(!is3DMode)}
+              className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/70 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md hover:bg-black/90 transition"
+            >
+              <Compass className={`h-3 w-3 ${is3DMode ? 'rotate-45' : ''}`} />
+              {is3DMode ? '3D' : '2D'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle(mapStyle === 'dark' ? 'satellite' : 'dark')}
+              className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/70 px-2.5 py-1 text-[10px] font-mono text-amber-300 backdrop-blur-md hover:bg-black/90 transition"
+            >
+              <Layers className="h-3 w-3" />
+              {mapStyle === 'dark' ? 'Satellite' : 'Dark'}
+            </button>
+          </div>
+        )}
 
         {/* Loading Spinner */}
         {loading && (
@@ -318,83 +342,87 @@ export function PropertyVisualizer({
           </div>
         )}
 
-        {/* Floating Overlay Panel: Street View Image */}
-        <div className="absolute bottom-4 left-4 z-10 max-w-[280px] sm:max-w-[320px]">
-          <div className="group relative overflow-hidden rounded-2xl border border-white/20 bg-[#0d1c16]/90 p-2 shadow-2xl backdrop-blur-md">
-            <div className="relative h-36 w-full overflow-hidden rounded-xl bg-black/40">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={streetViewUrl}
-                alt={`Street View of ${address}`}
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+        {/* Floating Overlay Panel: Street View Image (Hidden in compact mode) */}
+        {!compact && (
+          <div className="absolute bottom-4 left-4 z-10 max-w-[280px] sm:max-w-[320px]">
+            <div className="group relative overflow-hidden rounded-2xl border border-white/20 bg-[#0d1c16]/90 p-2 shadow-2xl backdrop-blur-md">
+              <div className="relative h-36 w-full overflow-hidden rounded-xl bg-black/40">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={streetViewUrl}
+                  alt={`Street View of ${address}`}
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
 
-              <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full border border-white/20 bg-black/50 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white backdrop-blur-sm uppercase">
-                <Eye className="h-3 w-3 text-grounds-sand" /> Street View
+                <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full border border-white/20 bg-black/50 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white backdrop-blur-sm uppercase">
+                  <Eye className="h-3 w-3 text-grounds-sand" /> Street View
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStreetViewOpen(true)}
+                  className="absolute bottom-2 right-2 rounded-full border border-white/20 bg-black/60 p-1.5 text-white/90 backdrop-blur-sm hover:bg-black/80"
+                  title="Expand Street View"
+                >
+                  <Expand className="h-3.5 w-3.5" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setStreetViewOpen(true)}
-                className="absolute bottom-2 right-2 rounded-full border border-white/20 bg-black/60 p-1.5 text-white/90 backdrop-blur-sm hover:bg-black/80"
-                title="Expand Street View"
-              >
-                <Expand className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="mt-2 px-1 pb-1">
-              <p className="text-xs font-semibold text-white">{parcelData?.address || address}</p>
-              <p className="text-[11px] text-white/60">Google Street View Proxy API</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Floating Overlay Panel: Regrid + MPROP Tax Data Card */}
-        <div className="absolute top-4 right-4 z-10 w-[280px] sm:w-[320px]">
-          <div className="space-y-3 rounded-2xl border border-white/20 bg-[#0d1c16]/90 p-4 shadow-2xl backdrop-blur-md">
-            <div className="flex items-center justify-between border-b border-white/10 pb-2">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-grounds-sand uppercase tracking-wider">
-                <Sparkles className="h-3.5 w-3.5" /> MPROP Tax Intelligence
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] text-white/70">
-                {parcelData?.source === 'regrid' ? 'Regrid Live' : 'Milwaukee Civic Data'}
-              </span>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-white/50">Parcel TaxKey</span>
-                <span className="font-mono font-medium text-white">{parcelData?.parcelId || '388-1204-000'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Owner of Record</span>
-                <span className="font-medium text-white max-w-[170px] truncate text-right">
-                  {parcelData?.ownerName || 'United Methodist Church'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Zoning Code</span>
-                <span className="inline-flex items-center gap-1 font-semibold text-amber-200">
-                  <Tag className="h-3 w-3" /> {parcelData?.zoning || 'RT4 Multi-Family'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Assessed Total Value</span>
-                <span className="font-semibold text-emerald-300">
-                  {parcelData?.assessedValue || '$1,250,000 (Exempt)'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Coordinates</span>
-                <span className="font-mono text-[11px] text-white/70">
-                  {effectiveLat.toFixed(4)}°, {effectiveLng.toFixed(4)}°
-                </span>
+              <div className="mt-2 px-1 pb-1">
+                <p className="text-xs font-semibold text-white">{parcelData?.address || address}</p>
+                <p className="text-[11px] text-white/60">Google Street View Proxy API</p>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Floating Overlay Panel: Regrid + MPROP Tax Data Card (Hidden in compact mode) */}
+        {!compact && (
+          <div className="absolute top-4 right-4 z-10 w-[280px] sm:w-[320px]">
+            <div className="space-y-3 rounded-2xl border border-white/20 bg-[#0d1c16]/90 p-4 shadow-2xl backdrop-blur-md">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-grounds-sand uppercase tracking-wider">
+                  <Sparkles className="h-3.5 w-3.5" /> MPROP Tax Intelligence
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] text-white/70">
+                  {parcelData?.source === 'regrid' ? 'Regrid Live' : 'Milwaukee Civic Data'}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-white/50">Parcel TaxKey</span>
+                  <span className="font-mono font-medium text-white">{parcelData?.parcelId || '388-1204-000'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/50">Owner of Record</span>
+                  <span className="font-medium text-white max-w-[170px] truncate text-right">
+                    {parcelData?.ownerName || 'United Methodist Church'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/50">Zoning Code</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-amber-200">
+                    <Tag className="h-3 w-3" /> {parcelData?.zoning || 'RT4 Multi-Family'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/50">Assessed Total Value</span>
+                  <span className="font-semibold text-emerald-300">
+                    {parcelData?.assessedValue || '$1,250,000 (Exempt)'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/50">Coordinates</span>
+                  <span className="font-mono text-[11px] text-white/70">
+                    {effectiveLat.toFixed(4)}°, {effectiveLng.toFixed(4)}°
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expanded Modal for Street View */}
