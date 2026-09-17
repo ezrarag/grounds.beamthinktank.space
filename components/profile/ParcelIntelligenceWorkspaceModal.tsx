@@ -46,6 +46,7 @@ export function ParcelIntelligenceWorkspaceModal({
   const [tabledSuccess, setTabledSuccess] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [grantMatches, setGrantMatches] = useState<{ totalGrantAllocation: number; matchedGrants: Array<{ id: string; programName: string; allocatedAmount: number; hourlyStipendMatch?: number }> } | null>(null)
+  const [workspaceTab, setWorkspaceTab] = useState<'visual' | 'proforma' | 'architecture' | 'team'>('visual')
   const [visualMode, setVisualMode] = useState<'uploaded' | 'street' | 'satellite'>(
     uploadedPhotoUrl ? 'uploaded' : 'street'
   )
@@ -322,311 +323,423 @@ export function ParcelIntelligenceWorkspaceModal({
             </div>
           </div>
         ) : (
-          /* Split View Workspace Layout */
-          <div className="grid gap-6 lg:grid-cols-12">
-          {/* LEFT SIDE: Visual Confirmation & Property Profile (5 cols) */}
-          <div className="lg:col-span-5 space-y-5">
-            {/* Visual Confirmation Card with Multi-View Switcher */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-3">
-                {/* Visual View Switcher Buttons */}
-                <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700 shadow-inner">
-                  {uploadedPhotoUrl && (
-                    <button
-                      onClick={() => setVisualMode('uploaded')}
-                      type="button"
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
-                        visualMode === 'uploaded'
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      📸 Site Photo
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setVisualMode('street')}
-                    type="button"
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
-                      visualMode === 'street'
-                        ? 'bg-sky-500 text-white shadow-sm'
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    📷 Street View
-                  </button>
-                  <button
-                    onClick={() => setVisualMode('satellite')}
-                    type="button"
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition ${
-                      visualMode === 'satellite'
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    🌐 GIS Satellite
-                  </button>
-                </div>
+          /* Full-Width Tabbed Workspace Layout */
+          <div className="space-y-5">
+            {/* Primary Workspace Tab Navigation Bar */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 font-mono text-xs font-bold">
+              <button
+                onClick={() => setWorkspaceTab('visual')}
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 transition shadow-sm ${
+                  workspaceTab === 'visual'
+                    ? 'bg-slate-900 text-emerald-400 border border-slate-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Compass className="h-4 w-4 text-emerald-400" /> 📷 Visual &amp; 3D GIS
+              </button>
 
-                <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/90 border border-slate-700 px-2.5 py-1 text-[10px] font-mono text-slate-300 shadow-sm">
-                    <MapPin className="h-3 w-3 text-emerald-400" />
-                    {parcel.lat?.toFixed(4)}, {parcel.lng?.toFixed(4)}
-                  </span>
-                </div>
-              </div>
+              <button
+                onClick={() => setWorkspaceTab('proforma')}
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 transition shadow-sm ${
+                  workspaceTab === 'proforma'
+                    ? 'bg-slate-900 text-sky-400 border border-slate-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <FileSpreadsheet className="h-4 w-4 text-sky-400" /> 📊 BEAM Pro-Forma &amp; MPROP
+              </button>
 
-              {/* Visual Media Container */}
-              <div className="relative h-80 sm:h-[340px] w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
-                {visualMode === 'uploaded' && uploadedPhotoUrl ? (
-                  <div className="relative h-full w-full overflow-hidden bg-slate-950 flex items-center justify-center">
-                    <img
-                      src={uploadedPhotoUrl}
-                      alt={`Captured Site Photo for ${parcel.address}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute bottom-2 left-2 rounded-md bg-black/80 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-md">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                      Uploaded Site Photo Matched
-                    </div>
-                  </div>
-                ) : visualMode === 'street' ? (
-                  !streetViewError ? (
-                    <img
-                      src={`/api/streetview?location=${encodeURIComponent(
-                        parcel.lat && parcel.lng
-                          ? `${parcel.lat},${parcel.lng}`
-                          : `${parcel.address || ''}, Milwaukee, WI`
-                      )}`}
-                      alt={`Street View of ${parcel.address}`}
-                      className="h-full w-full object-cover"
-                      onError={() => setStreetViewError(true)}
-                    />
-                  ) : (
-                    /* High-Res Static Satellite Imagery Fallback */
-                    <img
-                      src={`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/pin-s+0284c7(${parcel.lng || -87.945},${parcel.lat || 43.0396})/${parcel.lng || -87.945},${parcel.lat || 43.0396},17,0,0/600x300?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}`}
-                      alt={`Satellite View of ${parcel.address}`}
-                      className="h-full w-full object-cover"
-                    />
-                  )
-                ) : (
-                  <PropertyVisualizer
-                    address={parcel.address}
-                    propertyId={parcel.parcelId}
-                    lat={parcel.lat}
-                    lng={parcel.lng}
-                    compact={true}
-                    className="h-full w-full"
-                  />
-                )}
-              </div>
+              <button
+                onClick={() => setWorkspaceTab('architecture')}
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 transition shadow-sm ${
+                  workspaceTab === 'architecture'
+                    ? 'bg-slate-900 text-amber-400 border border-slate-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Ruler className="h-4 w-4 text-amber-400" /> 🏛️ Architecture &amp; BIM Specs
+              </button>
 
-              {/* Zoning & Lot Intelligence Badges */}
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="rounded-xl bg-slate-800/80 p-2.5 space-y-0.5 border border-slate-700">
-                  <span className="text-[9px] text-slate-400 block uppercase">Zoning Classification</span>
-                  <span className="font-bold text-white">{parcel.zoning_code || 'RT4'}</span>
-                  <span className="text-[10px] text-slate-300 block truncate">{parcel.zoning_description || parcel.zoning}</span>
-                </div>
-                <div className="rounded-xl bg-slate-800/80 p-2.5 space-y-0.5 border border-slate-700">
-                  <span className="text-[9px] text-slate-400 block uppercase">Lot / Structure SqFt</span>
-                  <span className="font-bold text-sky-300">
-                    {(parcel.sqft_structure || 4200).toLocaleString()} sqft
-                  </span>
-                  <span className="text-[10px] text-slate-400 block">Lot: {(parcel.sqft_lot || 8500).toLocaleString()} sqft</span>
-                </div>
-              </div>
-
-              {/* Tax Lien & Owner Status */}
-              <div className="flex items-center justify-between rounded-xl bg-slate-800/60 p-2.5 text-xs font-mono border border-slate-700">
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase">Owner Entity</span>
-                  <span className="font-bold text-slate-200">{parcel.ownerName}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[9px] text-slate-400 block uppercase">Tax Lien Status</span>
-                  <span className={`font-bold ${parcel.tax_lien_status === 'Clean / Current' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {parcel.tax_lien_status || 'Clean / Current'}
-                  </span>
-                </div>
-              </div>
+              <button
+                onClick={() => setWorkspaceTab('team')}
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 transition shadow-sm ${
+                  workspaceTab === 'team'
+                    ? 'bg-slate-900 text-purple-400 border border-slate-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <MessageSquare className="h-4 w-4 text-purple-400" /> 💰 Grants &amp; Team Squad
+              </button>
             </div>
 
-            {/* Architectural Website Bridge API Card */}
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-800">
-                  <Ruler className="h-4 w-4 text-slate-700" /> Architectural &amp; BIM Specs
-                </div>
-                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[9px] font-mono uppercase font-bold text-slate-700">
-                  Bridge API
-                </span>
-              </div>
-
-              {loadingArch ? (
-                <p className="text-xs text-slate-400">Loading architectural specs...</p>
-              ) : archSpecs ? (
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                    <span className="text-slate-500">Building Classification:</span>
-                    <span className="font-semibold text-slate-800">{archSpecs.buildingType}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                    <span className="text-slate-500">Structural Condition:</span>
-                    <span className="font-bold text-slate-800">{archSpecs.structuralConditionRating}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                    <span className="text-slate-500">Acoustic Ceiling Height:</span>
-                    <span className="font-mono font-bold text-emerald-700">{archSpecs.acousticCeilingHeightFt || 14} ft</span>
-                  </div>
-
-                  {archSpecs.hasCadBimModel ? (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2.5 text-emerald-900 text-[11px] font-semibold flex items-center justify-between">
-                      <span>IFC / CAD BIM Model Available</span>
-                      <a href={archSpecs.cadModelUrl || '#'} download className="underline text-emerald-700">Download CAD</a>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-amber-900 text-[11px] font-semibold">
-                      ⚠️ Architecture Scope Required: Recommended {archSpecs.recommendedSqftScope?.minSqft.toLocaleString()} - {archSpecs.recommendedSqftScope?.maxSqft.toLocaleString()} sqft layout plan.
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          {/* RIGHT SIDE: Financial Pro-Forma & Acquisition Team Module (7 cols) */}
-          <div className="lg:col-span-7 space-y-5">
-            {/* Financial Pro-Forma Underwriting Card */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-5 w-5 text-slate-800" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f172a]">
-                    BEAM Financial Pro-Forma Underwriting
-                  </h3>
-                </div>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase text-emerald-800">
-                  HUD Match Offset Enabled
-                </span>
-              </div>
-
-              {/* 4 Metric Columns */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
-                <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
-                  <span className="text-[9px] text-slate-400 block uppercase">Est. Total Value</span>
-                  <span className="font-extrabold text-[#0f172a] text-sm">{targetParcel.assessedValue}</span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
-                  <span className="text-[9px] text-slate-400 block uppercase">Est. Rehab Cost</span>
-                  <span className="font-extrabold text-amber-700 text-sm">
-                    ${estimatedRehabCost.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3">
-                  <span className="text-[9px] text-emerald-700 block uppercase">Sweat Equity Credit</span>
-                  <span className="font-extrabold text-emerald-800 text-sm">
-                    -${sweatEquityCredit.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-900 text-white p-3">
-                  <span className="text-[9px] text-slate-400 block uppercase">Net Cash Required</span>
-                  <span className="font-extrabold text-emerald-400 text-sm">
-                    ${netCashRequired.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Land vs. Improvement Value Breakdown for Underwriters */}
-              {targetParcel.appraisal_history && targetParcel.appraisal_history[0] && (
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 p-2.5 text-xs font-mono">
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessed Land Value</span>
-                    <span className="font-bold text-slate-800">
-                      ${(targetParcel.appraisal_history[0].landValue || 65000).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Improvement Value</span>
-                    <span className="font-bold text-emerald-800">
-                      ${(targetParcel.appraisal_history[0].improvementValue || 180000).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessment Source</span>
-                    <span className="text-[10px] text-slate-600 font-semibold">
-                      {targetParcel.appraisal_history[0].event || 'Municipal Tax Assessment'}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Workforce Grants & Enterprise Sponsor Match Badges */}
-              {grantMatches && (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-950">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-emerald-600" /> Matched Workforce Grants &amp; Enterprise Capital
-                    </span>
-                    <span className="text-emerald-700">${grantMatches.totalGrantAllocation.toLocaleString()} Total Funding</span>
-                  </div>
-                    {grantMatches.matchedGrants.map((grant) => (
-                      <span
-                        key={grant.id}
-                        className="rounded-lg bg-white border border-emerald-200 px-2 py-1 text-[10px] font-mono text-emerald-900 font-semibold"
+            {/* TAB 1: Visual & 3D GIS Satellite Container */}
+            {workspaceTab === 'visual' && (
+              <div className="space-y-4">
+                <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-3">
+                    {/* Visual View Switcher Buttons */}
+                    <div className="flex items-center gap-1 rounded-full bg-slate-800 p-1 border border-slate-700 shadow-inner">
+                      {uploadedPhotoUrl && (
+                        <button
+                          onClick={() => setVisualMode('uploaded')}
+                          type="button"
+                          className={`rounded-full px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition ${
+                            visualMode === 'uploaded'
+                              ? 'bg-amber-500 text-slate-950 shadow-sm'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          📸 Site Photo
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setVisualMode('street')}
+                        type="button"
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition ${
+                          visualMode === 'street'
+                            ? 'bg-sky-500 text-white shadow-sm'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
                       >
-                        {grant.programName} (+${grant.allocatedAmount.toLocaleString()})
+                        📷 Street View
+                      </button>
+                      <button
+                        onClick={() => setVisualMode('satellite')}
+                        type="button"
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition ${
+                          visualMode === 'satellite'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        🌐 GIS Satellite
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/90 border border-slate-700 px-3 py-1 text-[11px] font-mono text-slate-300 shadow-sm">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                        {parcel.lat?.toFixed(4)}, {parcel.lng?.toFixed(4)}
                       </span>
-                    ))}
+                    </div>
+                  </div>
+
+                  {/* Full-Width Visual Media Container */}
+                  <div className="relative h-[380px] sm:h-[460px] w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 flex items-center justify-center">
+                    {visualMode === 'uploaded' && uploadedPhotoUrl ? (
+                      <div className="relative h-full w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                        <img
+                          src={uploadedPhotoUrl}
+                          alt={`Captured Site Photo for ${parcel.address}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute bottom-3 left-3 rounded-lg bg-black/85 backdrop-blur-md px-3 py-1.5 text-xs font-mono text-emerald-300 border border-emerald-500/40 flex items-center gap-2 shadow-md">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                          Uploaded Site Photo Matched
+                        </div>
+                      </div>
+                    ) : visualMode === 'street' ? (
+                      !streetViewError ? (
+                        <img
+                          src={`/api/streetview?location=${encodeURIComponent(
+                            parcel.lat && parcel.lng
+                              ? `${parcel.lat},${parcel.lng}`
+                              : `${parcel.address || ''}, Milwaukee, WI`
+                          )}`}
+                          alt={`Street View of ${parcel.address}`}
+                          className="h-full w-full object-cover"
+                          onError={() => setStreetViewError(true)}
+                        />
+                      ) : (
+                        /* High-Res Static Satellite Imagery Fallback */
+                        <img
+                          src={`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/pin-s+0284c7(${parcel.lng || -87.945},${parcel.lat || 43.0396})/${parcel.lng || -87.945},${parcel.lat || 43.0396},17,0,0/800x480?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}`}
+                          alt={`Satellite View of ${parcel.address}`}
+                          className="h-full w-full object-cover"
+                        />
+                      )
+                    ) : (
+                      <PropertyVisualizer
+                        address={parcel.address}
+                        propertyId={parcel.parcelId}
+                        lat={parcel.lat}
+                        lng={parcel.lng}
+                        compact={true}
+                        className="h-full w-full"
+                      />
+                    )}
+                  </div>
+
+                  {/* Zoning & Lot Intelligence Badges */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                    <div className="rounded-xl bg-slate-800/80 p-3 space-y-0.5 border border-slate-700">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Zoning Code</span>
+                      <span className="font-bold text-amber-300 text-sm">{parcel.zoning_code || 'RT4'}</span>
+                      <span className="text-[10px] text-slate-300 block truncate">{parcel.zoning_description || parcel.zoning}</span>
+                    </div>
+                    <div className="rounded-xl bg-slate-800/80 p-3 space-y-0.5 border border-slate-700">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Structure SqFt</span>
+                      <span className="font-bold text-sky-300 text-sm">
+                        {(parcel.sqft_structure || 4200).toLocaleString()} sqft
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">Lot: {(parcel.sqft_lot || 8500).toLocaleString()} sqft</span>
+                    </div>
+                    <div className="rounded-xl bg-slate-800/80 p-3 space-y-0.5 border border-slate-700">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Owner Entity</span>
+                      <span className="font-bold text-slate-200 text-xs truncate block">{parcel.ownerName}</span>
+                    </div>
+                    <div className="rounded-xl bg-slate-800/80 p-3 space-y-0.5 border border-slate-700">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Tax Lien Status</span>
+                      <span className={`font-bold text-xs ${parcel.tax_lien_status === 'Clean / Current' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {parcel.tax_lien_status || 'Clean / Current'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Multi-User Collaboration & Site Review Requests */}
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800">
-                <span className="flex items-center gap-1.5">
-                  <MessageSquare className="h-4 w-4 text-slate-700" /> Team Collaboration &amp; Review Requests
-                </span>
-                <span className="text-[10px] font-mono text-slate-500 font-normal">
-                  Dispatch to Team Queue
-                </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => handleRequestSiteReview('GC')}
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition shadow-sm"
-                >
-                  <HardHat className="h-3.5 w-3.5 text-amber-700" />
-                  <span>Request GC Site Walk</span>
-                </button>
+            )}
 
-                <button
-                  onClick={() => handleRequestSiteReview('Underwriter')}
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition shadow-sm"
-                >
-                  <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-700" />
-                  <span>Request Underwriter Review</span>
-                </button>
+            {/* TAB 2: BEAM Financial Pro-Forma & MPROP Underwriting */}
+            {workspaceTab === 'proforma' && (
+              <div className="space-y-4">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-6 w-6 text-slate-800" />
+                      <div>
+                        <h3 className="text-base font-bold uppercase tracking-wider text-[#0f172a]">
+                          BEAM Financial Pro-Forma Underwriting
+                        </h3>
+                        <p className="text-xs text-slate-500 font-mono">TaxKey: {targetParcel.parcelId} • MPROP Municipal Assessment</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-mono font-bold uppercase text-emerald-800 border border-emerald-300">
+                      HUD Match Offset Enabled
+                    </span>
+                  </div>
 
-                <button
-                  onClick={handleShareParcelUrl}
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-4 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-100 transition shadow-sm sm:ml-auto"
-                >
-                  <Share2 className="h-3.5 w-3.5 text-sky-700" />
-                  <span>Share Parcel URL</span>
-                </button>
+                  {/* 4 Metric Columns */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-1">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Est. Total Value</span>
+                      <span className="font-extrabold text-[#0f172a] text-base">{targetParcel.assessedValue}</span>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-1">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Est. Rehab Cost</span>
+                      <span className="font-extrabold text-amber-700 text-base">
+                        ${estimatedRehabCost.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 space-y-1">
+                      <span className="text-[9px] text-emerald-700 block uppercase font-bold">Sweat Equity Credit</span>
+                      <span className="font-extrabold text-emerald-800 text-base">
+                        -${sweatEquityCredit.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-900 text-white p-4 space-y-1">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Net Cash Required</span>
+                      <span className="font-extrabold text-emerald-400 text-base">
+                        ${netCashRequired.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Land vs. Improvement Value Breakdown for Underwriters */}
+                  {targetParcel.appraisal_history && targetParcel.appraisal_history[0] && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs font-mono">
+                      <div>
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessed Land Value</span>
+                        <span className="font-bold text-slate-800 text-sm">
+                          ${(targetParcel.appraisal_history[0].landValue || 65000).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Improvement Value</span>
+                        <span className="font-bold text-emerald-800 text-sm">
+                          ${(targetParcel.appraisal_history[0].improvementValue || 180000).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="sm:text-right">
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessment Source</span>
+                        <span className="text-xs text-slate-700 font-semibold block">
+                          {targetParcel.appraisal_history[0].event || 'Municipal Tax Assessment'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MPROP Record Summary Table */}
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden text-xs">
+                    <table className="w-full text-left font-mono">
+                      <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="p-3">Attribute</th>
+                          <th className="p-3">Municipal Record Value</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-800">
+                        <tr>
+                          <td className="p-3 font-semibold text-slate-500">Property Address</td>
+                          <td className="p-3 font-bold">{targetParcel.address}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-semibold text-slate-500">Municipal TaxKey ID</td>
+                          <td className="p-3 font-bold text-sky-700">{targetParcel.parcelId}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-semibold text-slate-500">Zoning Designation</td>
+                          <td className="p-3 font-bold text-amber-700">{targetParcel.zoning_code || 'RT4'} ({targetParcel.zoning})</td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-semibold text-slate-500">Owner Entity</td>
+                          <td className="p-3 font-bold">{targetParcel.ownerName}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB 3: Architectural & BIM Specs */}
+            {workspaceTab === 'architecture' && (
+              <div className="space-y-4">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-6 w-6 text-slate-800" />
+                      <div>
+                        <h3 className="text-base font-bold uppercase tracking-wider text-slate-800">
+                          Architectural Specs &amp; BIM Model Scope
+                        </h3>
+                        <p className="text-xs text-slate-500 font-mono">Bridge API Engine • Structural Engineering Specs</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-slate-100 border border-slate-300 px-3 py-1 text-[10px] font-mono font-bold uppercase text-slate-700">
+                      Bridge API Connected
+                    </span>
+                  </div>
+
+                  {loadingArch ? (
+                    <div className="p-8 text-center text-slate-500 text-xs font-mono">Loading architectural &amp; structural specs...</div>
+                  ) : archSpecs ? (
+                    <div className="space-y-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-1">
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">Building Classification</span>
+                          <span className="font-bold text-slate-900 text-sm">{archSpecs.buildingType}</span>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-1">
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">Structural Condition</span>
+                          <span className="font-bold text-emerald-800 text-sm">{archSpecs.structuralConditionRating}</span>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-1">
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">Acoustic Ceiling Height</span>
+                          <span className="font-mono font-bold text-sky-700 text-sm">{archSpecs.acousticCeilingHeightFt || 14} ft</span>
+                        </div>
+                      </div>
+
+                      {archSpecs.hasCadBimModel ? (
+                        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-950 text-xs font-semibold flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                            <span>IFC / CAD BIM Model Available for Download</span>
+                          </div>
+                          <a href={archSpecs.cadModelUrl || '#'} download className="rounded-full bg-emerald-700 text-white px-4 py-2 font-mono text-xs font-bold hover:bg-emerald-800 transition">
+                            Download CAD BIM Package →
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-amber-900 text-xs font-semibold space-y-1">
+                          <p className="font-bold">⚠️ Architectural Scope Required</p>
+                          <p className="text-[11px] text-amber-800">
+                            Recommended layout scope: {archSpecs.recommendedSqftScope?.minSqft.toLocaleString()} - {archSpecs.recommendedSqftScope?.maxSqft.toLocaleString()} sqft floor plan.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: Grants & Team Squad */}
+            {workspaceTab === 'team' && (
+              <div className="space-y-4">
+                {/* Workforce Grants & Enterprise Sponsor Match Badges */}
+                {grantMatches && (
+                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-5 space-y-3 shadow-sm">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-950 border-b border-emerald-200/80 pb-3">
+                      <span className="flex items-center gap-2 text-sm">
+                        <Sparkles className="h-5 w-5 text-emerald-600" /> Matched Workforce Grants &amp; Enterprise Capital
+                      </span>
+                      <span className="text-emerald-800 font-extrabold text-sm">${grantMatches.totalGrantAllocation.toLocaleString()} Total Funding</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {grantMatches.matchedGrants.map((grant) => (
+                        <span
+                          key={grant.id}
+                          className="rounded-xl bg-white border border-emerald-300 px-3 py-1.5 text-xs font-mono text-emerald-900 font-bold shadow-sm"
+                        >
+                          {grant.programName} (+${grant.allocatedAmount.toLocaleString()})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-User Collaboration & Site Review Requests */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-3">
+                    <span className="flex items-center gap-2 text-sm">
+                      <MessageSquare className="h-5 w-5 text-slate-700" /> Team Collaboration &amp; Review Requests
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-normal">
+                      Dispatch to Team Queue
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => handleRequestSiteReview('GC')}
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-5 py-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-sm"
+                    >
+                      <HardHat className="h-4 w-4 text-amber-700" />
+                      <span>Request GC Site Walk</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleRequestSiteReview('Underwriter')}
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-5 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-sm"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
+                      <span>Request Underwriter Review</span>
+                    </button>
+
+                    <button
+                      onClick={handleShareParcelUrl}
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-5 py-2.5 text-xs font-bold text-sky-900 hover:bg-sky-100 transition shadow-sm sm:ml-auto"
+                    >
+                      <Share2 className="h-4 w-4 text-sky-700" />
+                      <span>Share Parcel URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Team Roster Module */}
+                <AcquisitionTeamModule parcel={targetParcel} user={user} />
+              </div>
+            )}
           </div>
-        </div>
         )}
         </div>
       </div>

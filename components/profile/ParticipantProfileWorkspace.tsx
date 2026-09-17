@@ -357,10 +357,15 @@ export function ParticipantProfileWorkspace() {
   }, [commandSearchInput])
 
   // Save search entry to Firebase Firestore & local state history
-  async function recordSearchHistory(queryStr: string, mode: SearchMode, parcelId?: string) {
+  async function recordSearchHistory(queryStr: string, mode: SearchMode, parcelData?: ParcelResult) {
     const newItem: SearchHistoryItem = {
       id: `srch-${Date.now()}`,
       query: queryStr,
+      address: parcelData?.address || queryStr,
+      taxkey: parcelData?.parcelId,
+      lat: parcelData?.lat,
+      lng: parcelData?.lng,
+      uploadedPhoto: activeUploadedPhoto || undefined,
       mode,
       timestamp: new Date().toISOString(),
     }
@@ -377,6 +382,18 @@ export function ParticipantProfileWorkspace() {
       } catch (err) {
         console.warn('Unable to record search history to Firestore:', err)
       }
+    }
+  }
+
+  function handleReinspectHistoryItem(item: SearchHistoryItem) {
+    if (item.uploadedPhoto) {
+      setActiveUploadedPhoto(item.uploadedPhoto)
+      setPhotoPreview(item.uploadedPhoto)
+    }
+    if (item.lat && item.lng) {
+      void handleExecuteParcelSearch(undefined, item.address || item.query, { lat: item.lat, lng: item.lng })
+    } else {
+      void handleExecuteParcelSearch(undefined, item.address || item.query)
     }
   }
 
@@ -403,7 +420,7 @@ export function ParticipantProfileWorkspace() {
       if (res.ok) {
         const data = (await res.json()) as ParcelResult
         setSearchedParcelResult(data)
-        void recordSearchHistory(queryText, searchMode, data.parcelId)
+        void recordSearchHistory(queryText, searchMode, data)
       } else {
         setCommandSearchError('Unable to query parcel endpoint.')
       }
@@ -755,25 +772,26 @@ export function ParticipantProfileWorkspace() {
                         <History className="h-3 w-3 text-[#c8b97a]" />
                         <span>(ⓘ History)</span>
                       </button>
-                      <span className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.55)] hidden sm:inline">
+                      <button
+                        onClick={() => setHistoryDrawerOpen(true)}
+                        type="button"
+                        className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.7)] hover:text-[#c8b97a] transition hidden sm:inline"
+                        title="Open History Tray"
+                      >
                         Recent:
-                      </span>
+                      </button>
                       {searchHistory.slice(0, 4).map((item) => (
                         <button
                           key={item.id}
                           onClick={() => {
-                            setCommandSearchInput(item.query)
-                            if (item.mode === 'map') {
-                              setSearchMode('map')
-                            } else {
-                              handleExecuteParcelSearch(undefined, item.query)
-                            }
+                            setCommandSearchInput(item.address || item.query)
+                            handleReinspectHistoryItem(item)
                           }}
                           type="button"
                           className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-[#c8b97a] hover:bg-[#88aa8f]/20 hover:text-white transition shadow-sm"
                         >
                           <span>{item.mode === 'map' ? '🗺️' : '📍'}</span>
-                          <span className="truncate max-w-[130px]">{item.query}</span>
+                          <span className="truncate max-w-[130px]">{item.address || item.query}</span>
                         </button>
                       ))}
                     </div>

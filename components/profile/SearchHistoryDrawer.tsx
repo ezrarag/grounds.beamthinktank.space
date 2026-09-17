@@ -38,7 +38,13 @@ export function SearchHistoryDrawer({
   function handleShareLink(item: SearchHistoryItem) {
     if (typeof window === 'undefined') return
     const baseUrl = `${window.location.origin}${window.location.pathname}`
-    const shareUrl = `${baseUrl}?address=${encodeURIComponent(item.query)}`
+    let param = `address=${encodeURIComponent(item.address || item.query)}`
+    if (item.taxkey) {
+      param = `taxkey=${encodeURIComponent(item.taxkey)}`
+    } else if (item.lat && item.lng) {
+      param = `lat=${item.lat}&lng=${item.lng}`
+    }
+    const shareUrl = `${baseUrl}?${param}`
 
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopiedId(item.id)
@@ -106,8 +112,11 @@ export function SearchHistoryDrawer({
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5 font-bold text-sm text-[#edf3ea]">
                       <MapPin className="h-4 w-4 text-[#88aa8f] shrink-0" />
-                      <span className="truncate max-w-[220px]">{item.query}</span>
+                      <span className="truncate max-w-[220px]">{item.address || item.query}</span>
                     </div>
+                    {item.taxkey && (
+                      <p className="text-[10px] font-mono text-[#c8b97a]">TaxKey: {item.taxkey}</p>
+                    )}
                     <p className="text-[10px] font-mono text-[rgba(237,243,234,0.5)]">
                       Inspected: {new Date(item.timestamp).toLocaleString()}
                     </p>

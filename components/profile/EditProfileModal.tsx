@@ -12,6 +12,11 @@ export type ConsoleViewMode = 'search' | 'squads' | 'homestead'
 export interface SearchHistoryItem {
   id: string
   query: string
+  address?: string
+  taxkey?: string
+  lat?: number
+  lng?: number
+  uploadedPhoto?: string
   mode: 'address' | 'map' | 'photo'
   timestamp: string
 }
