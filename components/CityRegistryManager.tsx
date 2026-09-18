@@ -30,7 +30,14 @@ export function CityRegistryManager() {
     setBaseUrl('')
     setResourceId('')
     setFieldMapText('')
+    setPipelineType('none')
+    setPipelineBaseUrl('')
+    setPipelineResourceId('')
   }
+
+  const [pipelineType, setPipelineType] = useState<CivicSourceType>('none')
+  const [pipelineBaseUrl, setPipelineBaseUrl] = useState('')
+  const [pipelineResourceId, setPipelineResourceId] = useState('')
 
   async function save() {
     setMessage(null)
@@ -62,6 +69,9 @@ export function CityRegistryManager() {
       ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}),
       ...(resourceId.trim() ? { resourceId: resourceId.trim() } : {}),
       ...(fieldMap ? { fieldMap } : {}),
+      ...(pipelineType !== 'none' ? { pipelineType } : {}),
+      ...(pipelineBaseUrl.trim() ? { pipelineBaseUrl: pipelineBaseUrl.trim() } : {}),
+      ...(pipelineResourceId.trim() ? { pipelineResourceId: pipelineResourceId.trim() } : {}),
     }
 
     setIsSaving(true)
@@ -210,6 +220,52 @@ export function CityRegistryManager() {
                 </label>
               </>
             ) : null}
+
+            {/* Optional Secondary Pipeline Source Section */}
+            <div className="border-t border-white/10 pt-3 mt-1">
+              <span className="block text-xs font-bold text-amber-300 uppercase tracking-wider mb-2">
+                Secondary Pipeline Source (CIP / Permits)
+              </span>
+              <div className="space-y-3">
+                <label className="block text-sm text-white/70">
+                  Pipeline Source Type
+                  <select
+                    value={pipelineType}
+                    onChange={(event) => setPipelineType(event.target.value as CivicSourceType)}
+                    className="mt-1 w-full rounded-2xl border border-white/10 bg-[#0b1712] px-4 py-3 text-white outline-none focus:border-grounds-sand/50"
+                  >
+                    {SOURCE_TYPES.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {pipelineType !== 'none' ? (
+                  <>
+                    <label className="block text-sm text-white/70">
+                      Pipeline Portal Base URL
+                      <input
+                        value={pipelineBaseUrl}
+                        onChange={(event) => setPipelineBaseUrl(event.target.value)}
+                        placeholder="https://data.cityoforlando.net"
+                        className="mt-1 w-full rounded-2xl border border-white/10 bg-[#0b1712] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
+                      />
+                    </label>
+                    <label className="block text-sm text-white/70">
+                      Pipeline Dataset / Resource ID
+                      <input
+                        value={pipelineResourceId}
+                        onChange={(event) => setPipelineResourceId(event.target.value)}
+                        placeholder={pipelineType === 'socrata' ? 'xxxx-xxxx' : 'resource UUID'}
+                        className="mt-1 w-full rounded-2xl border border-white/10 bg-[#0b1712] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-grounds-sand/50"
+                      />
+                    </label>
+                  </>
+                ) : null}
+              </div>
+            </div>
 
             {previewId ? (
               <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">id: {previewId}</p>

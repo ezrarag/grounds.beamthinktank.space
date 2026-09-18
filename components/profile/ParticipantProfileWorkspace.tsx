@@ -60,10 +60,11 @@ import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadE
 import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
 import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapCanvas'
 import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
+import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
-export type ConsoleViewMode = 'search' | 'squads' | 'homestead'
+export type ConsoleViewMode = 'search' | 'squads' | 'homestead' | 'pipeline'
 
 export interface ComplianceItem {
   id: string
@@ -724,6 +725,19 @@ export function ParticipantProfileWorkspace() {
                   <span>⚡</span> Live Opportunities &amp; Squads
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('pipeline')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'pipeline' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🚧</span> Future Development Pipeline (CIP/Permits)
+                </button>
+
                 <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
 
                 <div className="px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-[#88aa8f]">
@@ -1075,6 +1089,26 @@ export function ParticipantProfileWorkspace() {
                   onClaimHomestead={(city) => {
                     setMatcherCity(city)
                     setMatcherOpen(true)
+                  }}
+                />
+              </motion.div>
+            )}
+
+            {/* VIEW D: Future Development Pipeline & CIP Permits */}
+            {activeConsoleView === 'pipeline' && (
+              <motion.div
+                key="pipeline-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <PipelineProjectFeed
+                  initialCityId="milwaukee-wi"
+                  onInspectProject={(proj) => {
+                    if (proj.address) {
+                      handleExecuteParcelSearch(undefined, proj.address)
+                    }
                   }}
                 />
               </motion.div>

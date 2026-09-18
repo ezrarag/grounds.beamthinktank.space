@@ -15,6 +15,18 @@ export type CivicField =
   | 'parcelId'
   | 'assessedValue'
 
+/** Normalized fields extracted from future development / permit / CIP records. */
+export type PipelineField =
+  | 'sourceId'
+  | 'projectName'
+  | 'address'
+  | 'parcelId'
+  | 'status'
+  | 'estimatedTimeline'
+  | 'tradeScope'
+  | 'estimatedCost'
+  | 'applicantName'
+
 export interface CivicDataSource {
   type: CivicSourceType
   /** Portal base URL, e.g. https://data.milwaukee.gov (CKAN) or a Socrata domain. */
@@ -32,7 +44,7 @@ export interface CivicDataSource {
   /** Server-side env var holding an app token (Socrata) if required. */
   appTokenEnv?: string
   /** Optional explicit mapping from a normalized field to the raw record key. */
-  fieldMap?: Partial<Record<CivicField, string>>
+  fieldMap?: Partial<Record<CivicField | PipelineField, string>>
 }
 
 export interface CityConfig {
@@ -41,6 +53,8 @@ export interface CityConfig {
   label: string
   state: string
   dataSource: CivicDataSource
+  /** Secondary data source for capital improvement projects (CIP) / future permits. */
+  pipelineSource?: CivicDataSource
 }
 
 /** A civic record normalized by /api/civic from a city's open dataset. */
@@ -55,15 +69,28 @@ export interface CivicRecord {
   assessedValue: string
 }
 
+/** Normalized future development / permit / CIP record. */
+export interface PipelineProject {
+  sourceId: string
+  projectName: string
+  address: string
+  parcelId: string
+  status: string
+  estimatedTimeline: string
+  tradeScope: string
+  estimatedCost?: string
+  applicantName?: string
+  cityId: string
+  cityName: string
+  isPipeline: true
+}
+
 export const CITIES: CityConfig[] = [
   {
     id: 'milwaukee-wi',
     label: 'Milwaukee',
     state: 'WI',
     dataSource: {
-      // Milwaukee's open data portal (data.milwaukee.gov) runs CKAN. Point
-      // CIVIC_MILWAUKEE_RESOURCE_ID at the Master Property (MPROP) resource id
-      // to enable live scans.
       type: 'ckan',
       baseUrl: 'https://data.milwaukee.gov',
       resourceEnv: 'CIVIC_MILWAUKEE_RESOURCE_ID',
@@ -77,15 +104,34 @@ export const CITIES: CityConfig[] = [
         assessedValue: 'C_A_TOTAL',
       },
     },
+    pipelineSource: {
+      type: 'ckan',
+      baseUrl: 'https://data.milwaukee.gov',
+      resourceEnv: 'CIVIC_MILWAUKEE_PIPELINE_RESOURCE_ID',
+      fieldMap: {
+        projectName: 'PERMIT_TYPE',
+        address: 'GEO_ADDRESS',
+        status: 'STATUS',
+        estimatedTimeline: 'ISSUE_DATE',
+        tradeScope: 'WORK_DESCRIPTION',
+        estimatedCost: 'ESTIMATED_COST',
+      },
+    },
   },
   {
-    id: 'new-york-ny',
-    label: 'New York',
-    state: 'NY',
+    id: 'orlando-fl',
+    label: 'Orlando',
+    state: 'FL',
     dataSource: {
       type: 'socrata',
-      baseUrl: 'https://data.cityofnewyork.us',
-      resourceEnv: 'CIVIC_NEW_YORK_RESOURCE_ID',
+      baseUrl: 'https://data.cityoforlando.net',
+      resourceEnv: 'CIVIC_ORLANDO_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+    pipelineSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.cityoforlando.net',
+      resourceEnv: 'CIVIC_ORLANDO_PIPELINE_RESOURCE_ID',
       appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
     },
   },
@@ -97,6 +143,55 @@ export const CITIES: CityConfig[] = [
       type: 'socrata',
       baseUrl: 'https://data.cityofchicago.org',
       resourceEnv: 'CIVIC_CHICAGO_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+    pipelineSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.cityofchicago.org',
+      resourceEnv: 'CIVIC_CHICAGO_PIPELINE_RESOURCE_ID',
+      resourceId: 'ydr8-5enu',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'atlanta-ga',
+    label: 'Atlanta (Fulton County)',
+    state: 'GA',
+    dataSource: {
+      type: 'none',
+    },
+    pipelineSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.atlantaga.gov',
+      resourceEnv: 'CIVIC_ATLANTA_PIPELINE_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'zellwood-fl',
+    label: 'Zellwood (Orange County)',
+    state: 'FL',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.ocfl.net',
+      resourceEnv: 'CIVIC_ZELLWOOD_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+    pipelineSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.ocfl.net',
+      resourceEnv: 'CIVIC_ZELLWOOD_PIPELINE_RESOURCE_ID',
+      appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
+    },
+  },
+  {
+    id: 'new-york-ny',
+    label: 'New York',
+    state: 'NY',
+    dataSource: {
+      type: 'socrata',
+      baseUrl: 'https://data.cityofnewyork.us',
+      resourceEnv: 'CIVIC_NEW_YORK_RESOURCE_ID',
       appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
     },
   },
@@ -133,14 +228,6 @@ export const CITIES: CityConfig[] = [
       appTokenEnv: 'CIVIC_SOCRATA_APP_TOKEN',
     },
   },
-  {
-    id: 'atlanta-ga',
-    label: 'Atlanta (Fulton County)',
-    state: 'GA',
-    dataSource: {
-      type: 'none',
-    },
-  },
 ]
 
 /** Shape of an admin-managed city stored in the Firestore `cities` collection. */
@@ -151,6 +238,10 @@ export interface StoredCity {
   baseUrl?: string
   resourceId?: string
   fieldMap?: Partial<Record<CivicField, string>>
+  pipelineType?: CivicSourceType
+  pipelineBaseUrl?: string
+  pipelineResourceId?: string
+  pipelineFieldMap?: Partial<Record<PipelineField, string>>
 }
 
 /** Convert a Firestore city doc into a runtime CityConfig. */
@@ -166,6 +257,16 @@ export function storedCityToConfig(id: string, doc: StoredCity): CityConfig {
       fieldMap: doc.fieldMap,
       appTokenEnv: doc.type === 'socrata' ? 'CIVIC_SOCRATA_APP_TOKEN' : undefined,
     },
+    pipelineSource:
+      doc.pipelineType && doc.pipelineType !== 'none'
+        ? {
+            type: doc.pipelineType,
+            baseUrl: doc.pipelineBaseUrl,
+            resourceId: doc.pipelineResourceId,
+            fieldMap: doc.pipelineFieldMap as any,
+            appTokenEnv: doc.pipelineType === 'socrata' ? 'CIVIC_SOCRATA_APP_TOKEN' : undefined,
+          }
+        : undefined,
   }
 }
 
