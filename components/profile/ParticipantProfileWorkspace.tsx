@@ -62,10 +62,11 @@ import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapC
 import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
 import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
 import { RedevelopmentPipelineBoard } from '@/components/redevelopment/RedevelopmentPipelineBoard'
+import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
-export type ConsoleViewMode = 'search' | 'squads' | 'homestead' | 'pipeline' | 'redevelopment'
+export type ConsoleViewMode = 'search' | 'squads' | 'homestead' | 'pipeline' | 'redevelopment' | 'civic_partners'
 
 export interface ComplianceItem {
   id: string
@@ -752,6 +753,19 @@ export function ParticipantProfileWorkspace() {
                   <span>🚧</span> Future Development Pipeline (CIP/Permits)
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConsoleView('civic_partners')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'civic_partners' ? 'bg-blue-500/20 text-blue-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🏛️</span> Aldermanic &amp; CDC Partner Layer
+                </button>
+
                 <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
 
                 <div className="px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-[#88aa8f]">
@@ -1138,6 +1152,19 @@ export function ParticipantProfileWorkspace() {
                 transition={{ duration: 0.25 }}
               >
                 <RedevelopmentPipelineBoard viewMode="participant" />
+              </motion.div>
+            )}
+
+            {/* VIEW F: Aldermanic Contacts & CDC / Land Trust Partners */}
+            {activeConsoleView === 'civic_partners' && (
+              <motion.div
+                key="civic-partners-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <CivicPartnerLayer initialCityId="milwaukee-wi" />
               </motion.div>
             )}
           </AnimatePresence>

@@ -24,6 +24,7 @@ import type { ParcelResult } from '@/app/api/parcel/route'
 import type { ArchitecturalSpecsResult } from '@/app/api/architecture/specs/route'
 import { AcquisitionTeamModule } from '@/components/profile/AcquisitionTeamModule'
 import { PropertyVisualizer } from '@/components/PropertyVisualizer'
+import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
 
 interface ParcelIntelligenceWorkspaceModalProps {
   parcel: ParcelResult | null
@@ -737,6 +738,9 @@ export function ParcelIntelligenceWorkspaceModal({
 
                 {/* Team Roster Module */}
                 <AcquisitionTeamModule parcel={targetParcel} user={user} />
+
+                {/* Aldermanic & Non-Profit CDC / Land Trust Layer */}
+                <CivicPartnerLayer initialCityId="milwaukee-wi" />
               </div>
             )}
           </div>
