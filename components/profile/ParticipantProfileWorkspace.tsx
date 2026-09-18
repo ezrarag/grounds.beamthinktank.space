@@ -61,10 +61,11 @@ import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDevelope
 import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapCanvas'
 import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
 import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
+import { RedevelopmentPipelineBoard } from '@/components/redevelopment/RedevelopmentPipelineBoard'
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
-export type ConsoleViewMode = 'search' | 'squads' | 'homestead' | 'pipeline'
+export type ConsoleViewMode = 'search' | 'squads' | 'homestead' | 'pipeline' | 'redevelopment'
 
 export interface ComplianceItem {
   id: string
@@ -728,6 +729,19 @@ export function ParticipantProfileWorkspace() {
                 <button
                   type="button"
                   onClick={() => {
+                    setActiveConsoleView('redevelopment')
+                    setHeaderMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
+                    activeConsoleView === 'redevelopment' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                  }`}
+                >
+                  <span>🏗️</span> Portfolio Redevelopment Board
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setActiveConsoleView('pipeline')
                     setHeaderMenuOpen(false)
                   }}
@@ -1111,6 +1125,19 @@ export function ParticipantProfileWorkspace() {
                     }
                   }}
                 />
+              </motion.div>
+            )}
+
+            {/* VIEW E: Portfolio Redevelopment Board */}
+            {activeConsoleView === 'redevelopment' && (
+              <motion.div
+                key="redevelopment-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <RedevelopmentPipelineBoard viewMode="participant" />
               </motion.div>
             )}
           </AnimatePresence>

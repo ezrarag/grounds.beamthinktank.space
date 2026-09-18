@@ -18,11 +18,17 @@ import { useIsAdmin } from '@/lib/useIsAdmin'
 
 const CARDS = [
   {
+    href: '/admin',
+    icon: Building2,
+    title: 'Redevelopment Pipeline Board',
+    body: 'Portfolio-level status board tracking active projects, phase milestones, open equity slots, and financing notes.',
+    primary: true,
+  },
+  {
     href: '/portal/acquisition',
     icon: Zap,
     title: 'Participant & Property Dispatch Console',
     body: 'Live Mapbox proximity dispatch, Cohort Manager command center, and property maturation.',
-    primary: true,
   },
   {
     href: '/portal/admin/add',

@@ -6,15 +6,60 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin allowlist — keep in sync with NEXT_PUBLIC_ADMIN_EMAILS / lib/adminAccess.ts.
-    function isAdmin() {
-      return signedIn() && request.auth.token.email in ['ezra@readyaimgo.biz'];
+    function hasRoleDoc() {
+      return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid));
     }
 
-    // Properties: anyone can read public ones; any signed-in participant can add
-    // new ones; only admins can edit or delete existing records.
+    function getRoleDoc() {
+      return get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data;
+    }
+
+    // Admin check — checks email allowlist, auth claim, or server-granted role doc.
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.email in ['ezra@readyaimgo.biz'] ||
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        (hasRoleDoc() && getRoleDoc().role == 'admin')
+      );
+    }
+
+    // Cohort Manager check — admin or cohort-manager role.
+    function isCohortManager() {
+      return signedIn() && (
+        isAdmin() ||
+        request.auth.token.role == 'cohort-manager' ||
+        (hasRoleDoc() && getRoleDoc().role == 'cohort-manager')
+      );
+    }
+
+    // Verified Professional check by subtype (general-contractor, underwriter, attorney, surveyor, architect).
+    function isVerifiedProfessional(subtype) {
+      return signedIn() && (
+        isAdmin() ||
+        (request.auth.token.role == 'verified-professional' && request.auth.token.subtype == subtype) ||
+        (hasRoleDoc() && getRoleDoc().role == 'verified-professional' && getRoleDoc().subtype == subtype)
+      );
+    }
+
+    // User Roles & Credentials (server grant read/write).
+    match /userRoles/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Asset Interest Inquiries — DEFECT FIX (a):
+    // Any signed-in user can submit an inquiry; read/update/delete restricted to admin/cohort-manager.
+    match /assetInterest/{inquiryId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin() || isCohortManager();
+    }
+
+    // Properties — DEFECT FIX (b):
+    // Public assets are readable by anyone; non-public assets (publicVisible != true)
+    // require admin or cohort-manager authorization. "Signed-in" alone is no longer sufficient.
     match /beamAssets/{assetId} {
-      allow read: if signedIn() || resource.data.publicVisible == true;
+      allow read: if resource.data.publicVisible == true || isAdmin() || isCohortManager();
       allow create: if signedIn();
       allow update, delete: if isAdmin();
     }
@@ -83,17 +128,19 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    // Redevelopment Projects & Subcollections:
+    // Published projects readable by anyone; unpublished require admin/cohort-manager.
     match /redevelopmentProjects/{projectId} {
-      allow read: if resource.data.isPublished == true;
-      allow write: if signedIn();
+      allow read: if resource.data.isPublished == true || isAdmin() || isCohortManager();
+      allow write: if isAdmin() || isCohortManager();
 
       match /{sub=**} {
-        allow read: if true;
-        allow write: if signedIn();
+        allow read: if resource.data.isPublished == true || isAdmin() || isCohortManager();
+        allow write: if isAdmin() || isCohortManager();
       }
     }
 
-    // Everything else (site/pathway config, etc.): signed-in read, admin-only write.
+    // Catch-all: signed-in read for default collections, admin-only write.
     match /{document=**} {
       allow read: if signedIn();
       allow write: if isAdmin();

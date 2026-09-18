@@ -236,3 +236,34 @@ export async function getProject(slug: string): Promise<RedevelopmentProjectBund
   }
 }
 
+export async function getAllProjects(): Promise<RedevelopmentProjectBundle[]> {
+  const projectDocs = await fetchFirestoreCollection('redevelopmentProjects')
+  if (!projectDocs || projectDocs.length === 0) {
+    return []
+  }
+
+  const bundles = await Promise.all(
+    projectDocs.map(async (doc) => {
+      const project = parseProject(doc)
+      const slug = project.slug
+      const [phaseDocs, slotDocs] = await Promise.all([
+        fetchFirestoreCollection(`redevelopmentProjects/${slug}/phases`),
+        fetchFirestoreCollection(`redevelopmentProjects/${slug}/equitySlots`),
+      ])
+      return {
+        project,
+        phases: phaseDocs.map(parsePhase).sort((left, right) => left.order - right.order),
+        equitySlots: slotDocs.map(parseEquitySlot).sort((left, right) => left.sortOrder - right.sortOrder),
+      }
+    })
+  )
+
+  return bundles.sort((a, b) => a.project.sortOrder - b.project.sortOrder)
+}
+
+export async function getPublishedProjects(): Promise<RedevelopmentProjectBundle[]> {
+  const all = await getAllProjects()
+  return all.filter((b) => b.project.isPublished)
+}
+
+

@@ -13,8 +13,10 @@ import {
   Briefcase,
   FileSpreadsheet,
   Send,
+  Lock,
 } from 'lucide-react'
 import type { ParcelResult } from '@/app/api/parcel/route'
+import { useUserRole, type VerifiedSubtype } from '@/lib/roles'
 
 export interface TeamMember {
   roleId: string
@@ -109,11 +111,33 @@ export function AcquisitionTeamModule({ parcel, user, onRoleClaimed }: Acquisiti
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSent, setInviteSent] = useState(false)
 
+  const { isAdmin, isVerifiedProfessional } = useUserRole()
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null)
+
+  const REQUIRED_SUBTYPES: Record<string, VerifiedSubtype> = {
+    architect: 'architect',
+    engineer: 'surveyor',
+    acoustician: 'architect',
+    attorney: 'attorney',
+  }
+
   function toggleChecklist(id: string) {
     setChecklist((prev) => prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item)))
   }
 
   function handleClaimRole(roleId: string) {
+    const target = teamRoster.find((r) => r.roleId === roleId)
+    if (target && target.category === 'professional') {
+      const requiredSubtype = REQUIRED_SUBTYPES[roleId] || 'architect'
+      if (!isAdmin && !isVerifiedProfessional(requiredSubtype)) {
+        setVerificationNotice(
+          `Receiving assignment as ${target.title} requires a verified credential [${requiredSubtype}]. Community members can submit inquiries and claim civic-labor roles.`
+        )
+        return
+      }
+    }
+
+    setVerificationNotice(null)
     const name = user?.displayName || 'Signed-In Member'
     const handle = user?.email ? `@${user.email.split('@')[0]}` : '@member'
 
@@ -160,6 +184,16 @@ export function AcquisitionTeamModule({ parcel, user, onRoleClaimed }: Acquisiti
           {acquisitionPathType}
         </span>
       </div>
+
+      {verificationNotice && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 flex items-start gap-2 shadow-sm">
+          <ShieldAlert className="h-4 w-4 shrink-0 text-amber-700 mt-0.5" />
+          <div className="space-y-0.5">
+            <strong className="font-bold text-amber-900 block">Credential Verification Required</strong>
+            <p className="text-[11px] leading-relaxed text-amber-800">{verificationNotice}</p>
+          </div>
+        </div>
+      )}
 
       {/* 1. Acquisition Checklist Section */}
       <div className="space-y-3">
