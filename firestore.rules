@@ -128,6 +128,12 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    // Participant Profiles — signed-in users can read profiles and write their own profile doc.
+    match /participantProfiles/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
     // Redevelopment Projects & Subcollections:
     // Published projects readable by anyone; unpublished require admin/cohort-manager.
     match /redevelopmentProjects/{projectId} {

@@ -207,8 +207,19 @@ export function ParticipantProfileWorkspace() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        setUserCoords({ lat, lng })
         setGeoLocating(false)
+
+        // Automatically map physical GPS coordinates to nearest target node & preference
+        if (lat > 32.5 && lat < 34.5 && lng > -85.5 && lng < -83.5) {
+          setUserRegion('ATL')
+        } else if (lat > 27.0 && lat < 29.5 && lng > -82.5 && lng < -80.0) {
+          setUserRegion('TPA')
+        } else if (lat > 42.0 && lat < 44.0 && lng > -89.0 && lng < -87.0) {
+          setUserRegion('MKE')
+        }
       },
       (err) => {
         setGeoError(err.message || 'Unable to fetch physical location.')
@@ -217,6 +228,19 @@ export function ParticipantProfileWorkspace() {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     )
+  }
+
+  function getCurrentViewLabel(): string {
+    if (profileTab === 'explore') return '🏛️ Explore & Table Sites'
+    if (profileTab === 'roster') return '👷 My Work Rosters'
+    if (profileTab === 'compliance') return '⚖️ Stewardship & Compliance'
+    if (activeConsoleView === 'search') return '🔍 Parcel Search Engine'
+    if (activeConsoleView === 'homestead') return '📍 Claim $1 Homestead Site'
+    if (activeConsoleView === 'squads') return '⚡ Live Opportunities & Squads'
+    if (activeConsoleView === 'redevelopment') return '🏗️ Portfolio Redevelopment Board'
+    if (activeConsoleView === 'pipeline') return '🚧 Future Development Pipeline'
+    if (activeConsoleView === 'civic_partners') return '🏛️ Aldermanic & CDC Partner Layer'
+    return 'Workspace Views & Panels'
   }
 
   useEffect(() => {
@@ -678,7 +702,7 @@ export function ParticipantProfileWorkspace() {
               className="inline-flex items-center gap-2 rounded-full border border-[rgba(237,243,234,0.18)] bg-[#102119]/80 px-4 py-2 text-xs font-semibold text-[#edf3ea] hover:bg-[#1b3327] hover:border-[#88aa8f] transition shadow-md"
             >
               <Layers className="h-3.5 w-3.5 text-[#88aa8f]" />
-              <span>Workspace Views &amp; Panels</span>
+              <span>{getCurrentViewLabel()}</span>
               <ChevronDown className={`h-3.5 w-3.5 text-[#c8b97a] transition-transform ${headerMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -692,10 +716,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('search')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'search' ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'search' && !profileTab ? 'bg-[#88aa8f]/20 text-[#edf3ea] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>🔍</span> Parcel Search Engine
@@ -705,10 +730,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('homestead')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'homestead' ? 'bg-[#88aa8f]/20 text-[#88aa8f] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'homestead' && !profileTab ? 'bg-[#88aa8f]/20 text-[#88aa8f] font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>📍</span> Claim $1 Homestead Site
@@ -718,10 +744,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('squads')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'squads' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'squads' && !profileTab ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>⚡</span> Live Opportunities &amp; Squads
@@ -731,10 +758,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('redevelopment')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'redevelopment' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'redevelopment' && !profileTab ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>🏗️</span> Portfolio Redevelopment Board
@@ -744,10 +772,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('pipeline')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'pipeline' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'pipeline' && !profileTab ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>🚧</span> Future Development Pipeline (CIP/Permits)
@@ -757,10 +786,11 @@ export function ParticipantProfileWorkspace() {
                   type="button"
                   onClick={() => {
                     setActiveConsoleView('civic_partners')
+                    setProfileTab(null)
                     setHeaderMenuOpen(false)
                   }}
                   className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition ${
-                    activeConsoleView === 'civic_partners' ? 'bg-blue-500/20 text-blue-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
+                    activeConsoleView === 'civic_partners' && !profileTab ? 'bg-blue-500/20 text-blue-300 font-bold' : 'text-[rgba(237,243,234,0.8)] hover:bg-[#102119]'
                   }`}
                 >
                   <span>🏛️</span> Aldermanic &amp; CDC Partner Layer
@@ -769,7 +799,7 @@ export function ParticipantProfileWorkspace() {
                 <div className="border-t border-[rgba(237,243,234,0.1)] my-1" />
 
                 <div className="px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-[#88aa8f]">
-                  Stage Panels &amp; Secondary Views
+                  Stage Panels &amp; Surveys
                 </div>
 
                 <button
@@ -810,6 +840,13 @@ export function ParticipantProfileWorkspace() {
                 >
                   <span>⚖️</span> Stewardship &amp; Compliance
                 </button>
+
+                <Link
+                  href="/testimony"
+                  className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-left transition text-purple-300 hover:bg-[#102119]"
+                >
+                  <span>🎤</span> Submit Space Needs &amp; Cultural Testimony
+                </Link>
               </div>
             )}
           </div>
