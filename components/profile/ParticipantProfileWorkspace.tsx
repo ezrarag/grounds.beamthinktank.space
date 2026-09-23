@@ -244,6 +244,12 @@ export function ParticipantProfileWorkspace() {
   }
 
   useEffect(() => {
+    if (!userCoords) {
+      requestUserLocation()
+    }
+  }, [])
+
+  useEffect(() => {
     if (searchMode === 'map' && !userCoords) {
       requestUserLocation()
     }
