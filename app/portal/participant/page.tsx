@@ -1,5 +1,10 @@
 import { ParticipantProfileWorkspace } from '@/components/profile/ParticipantProfileWorkspace'
+import { ParcelErrorBoundary } from '@/components/ParcelErrorBoundary'
 
 export default function ParticipantDashboardPage() {
-  return <ParticipantProfileWorkspace />
+  return (
+    <ParcelErrorBoundary fallbackTitle="Participant Portal Workspace">
+      <ParticipantProfileWorkspace />
+    </ParcelErrorBoundary>
+  )
 }

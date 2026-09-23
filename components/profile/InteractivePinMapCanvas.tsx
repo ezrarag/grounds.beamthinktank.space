@@ -239,19 +239,23 @@ export function InteractivePinMapCanvas({
 
           // 4. Listen for Map Surface Click Event
           map.on('click', (e: any) => {
-            const clickedLat = e.lngLat.lat
-            const clickedLng = e.lngLat.lng
-            const newCoords = { lat: clickedLat, lng: clickedLng }
+            try {
+              const clickedLat = e.lngLat.lat
+              const clickedLng = e.lngLat.lng
+              const newCoords = { lat: clickedLat, lng: clickedLng }
 
-            setCurrentCoords(newCoords)
-            marker.setLngLat([clickedLng, clickedLat])
+              setCurrentCoords(newCoords)
+              marker.setLngLat([clickedLng, clickedLat])
 
-            // Update 0.5-Mile Radius Circle position
-            const newCircleData = createGeoJSONCircle([clickedLng, clickedLat])
-            const source = map.getSource('radius-circle-source')
-            if (source) (source as any).setData(newCircleData)
+              // Update 0.5-Mile Radius Circle position
+              const newCircleData = createGeoJSONCircle([clickedLng, clickedLat])
+              const source = map.getSource('radius-circle-source')
+              if (source) (source as any).setData(newCircleData)
 
-            onCoordsChange(newCoords, true)
+              onCoordsChange(newCoords, true)
+            } catch (err) {
+              console.warn('Map click notice:', err)
+            }
           })
 
           // 5. Add Markers for Real BEAM Acquisition Sites in Database
@@ -266,8 +270,12 @@ export function InteractivePinMapCanvas({
                 <span class="rounded bg-black/80 px-1.5 py-0.5 text-[8px] font-mono font-bold text-[#c8b97a]">${asset.name}</span>
               `
               assetEl.addEventListener('click', (e) => {
-                e.stopPropagation()
-                onInspectParcel({ lat: currentCoords.lat, lng: currentCoords.lng })
+                try {
+                  e.stopPropagation()
+                  onInspectParcel({ lat: currentCoords.lat, lng: currentCoords.lng })
+                } catch (err) {
+                  console.warn('Pin inspect notice:', err)
+                }
               })
 
               const approxHash = asset.name.length % 5

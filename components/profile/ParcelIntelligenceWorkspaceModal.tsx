@@ -18,13 +18,25 @@ import {
   HardHat,
   MessageSquare,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import type { ArchitecturalSpecsResult } from '@/app/api/architecture/specs/route'
 import { AcquisitionTeamModule } from '@/components/profile/AcquisitionTeamModule'
-import { PropertyVisualizer } from '@/components/PropertyVisualizer'
 import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
+
+const PropertyVisualizer = dynamic(
+  () => import('@/components/PropertyVisualizer').then((mod) => mod.PropertyVisualizer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-slate-950 animate-pulse border border-slate-800 flex items-center justify-center text-xs font-mono text-slate-400">
+        Loading 3D Property Visualizer...
+      </div>
+    ),
+  }
+)
 
 interface ParcelIntelligenceWorkspaceModalProps {
   parcel: ParcelResult | null

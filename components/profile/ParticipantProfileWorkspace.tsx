@@ -52,6 +52,7 @@ import type {
   GroundsWorkRosterAttachment,
 } from '@/lib/types/groundsProfile'
 import { useAcquisitionSites, getAssetTrack, type BeamAsset } from '@/lib/useAcquisitionSites'
+import dynamic from 'next/dynamic'
 import { AssetInterestModal } from '@/components/profile/AssetInterestModal'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
@@ -59,11 +60,22 @@ import { LiveOpportunityFeed } from '@/components/profile/LiveOpportunityFeed'
 import { EditProfileModal, type UserTargetRegion, type SearchHistoryItem } from '@/components/profile/EditProfileModal'
 import { RegionalHomesteadEngine } from '@/components/profile/RegionalHomesteadEngine'
 import { ForgeDeveloperFeedbackModal } from '@/components/feedback/ForgeDeveloperFeedbackModal'
-import { InteractivePinMapCanvas } from '@/components/profile/InteractivePinMapCanvas'
 import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
 import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
 import { RedevelopmentPipelineBoard } from '@/components/redevelopment/RedevelopmentPipelineBoard'
 import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
+
+const InteractivePinMapCanvas = dynamic(
+  () => import('@/components/profile/InteractivePinMapCanvas').then((mod) => mod.InteractivePinMapCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[480px] w-full rounded-2xl bg-slate-900 animate-pulse border border-slate-800 flex items-center justify-center text-xs font-mono text-slate-400">
+        Loading Interactive Pin Map Canvas...
+      </div>
+    ),
+  }
+)
 
 export type ProfileTab = 'explore' | 'roster' | 'compliance' | null
 export type SearchMode = 'address' | 'map' | 'photo'
