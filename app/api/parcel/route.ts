@@ -424,11 +424,23 @@ export async function GET(request: Request) {
   ) {
     return NextResponse.json({
       found: false,
-      address: queryStr,
+      address: queryStr || 'Unassigned Lot',
       ownerName: 'Unassigned / Public Parcel',
       zoning: 'Unclassified',
+      zoning_code: 'UNCL',
+      zoning_description: 'Unclassified Public Land',
       parcelId: 'N/A',
       assessedValue: '$0',
+      sqft_structure: 0,
+      sqft_lot: 5000,
+      tax_lien_status: 'Clean / Current',
+      delinquent_tax_amount: 0,
+      source: 'civic-fallback',
+      lat: 43.0396,
+      lng: -87.945,
+      appraisal_history: [
+        { year: 2025, assessedValue: 0, landValue: 0, improvementValue: 0, event: 'Unassigned Lot Record' },
+      ],
     })
   }
 

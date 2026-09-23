@@ -38,6 +38,7 @@ import { parseExifLocation } from '@/lib/exif'
 import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
+import { ParcelErrorBoundary } from '@/components/ParcelErrorBoundary'
 import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import {
   PropertyMatcherModal,
@@ -1505,12 +1506,14 @@ export function ParticipantProfileWorkspace() {
 
       {/* Universal Real Estate Intelligence Split-View Workspace Modal */}
       {searchedParcelResult && (
-        <ParcelIntelligenceWorkspaceModal
-          parcel={searchedParcelResult}
-          user={user}
-          uploadedPhotoUrl={activeUploadedPhoto}
-          onClose={() => setSearchedParcelResult(null)}
-        />
+        <ParcelErrorBoundary onClose={() => setSearchedParcelResult(null)}>
+          <ParcelIntelligenceWorkspaceModal
+            parcel={searchedParcelResult}
+            user={user}
+            uploadedPhotoUrl={activeUploadedPhoto}
+            onClose={() => setSearchedParcelResult(null)}
+          />
+        </ParcelErrorBoundary>
       )}
 
       {/* Minimalist Slide-out Search History Drawer */}

@@ -553,24 +553,24 @@ export function ParcelIntelligenceWorkspaceModal({
                   </div>
 
                   {/* Land vs. Improvement Value Breakdown for Underwriters */}
-                  {targetParcel.appraisal_history && targetParcel.appraisal_history[0] && (
+                  {Array.isArray(targetParcel.appraisal_history) && targetParcel.appraisal_history.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs font-mono">
                       <div>
                         <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessed Land Value</span>
                         <span className="font-bold text-slate-800 text-sm">
-                          ${(targetParcel.appraisal_history[0].landValue || 65000).toLocaleString()}
+                          ${(targetParcel.appraisal_history[0]?.landValue ?? 65000).toLocaleString()}
                         </span>
                       </div>
                       <div>
                         <span className="text-[9px] text-slate-400 block uppercase font-bold">Improvement Value</span>
                         <span className="font-bold text-emerald-800 text-sm">
-                          ${(targetParcel.appraisal_history[0].improvementValue || 180000).toLocaleString()}
+                          ${(targetParcel.appraisal_history[0]?.improvementValue ?? 180000).toLocaleString()}
                         </span>
                       </div>
                       <div className="sm:text-right">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold">Assessment Source</span>
                         <span className="text-xs text-slate-700 font-semibold block">
-                          {targetParcel.appraisal_history[0].event || 'Municipal Tax Assessment'}
+                          {targetParcel.appraisal_history[0]?.event || 'Municipal Tax Assessment'}
                         </span>
                       </div>
                     </div>
@@ -661,7 +661,7 @@ export function ParcelIntelligenceWorkspaceModal({
                         <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-amber-900 text-xs font-semibold space-y-1">
                           <p className="font-bold">⚠️ Architectural Scope Required</p>
                           <p className="text-[11px] text-amber-800">
-                            Recommended layout scope: {archSpecs.recommendedSqftScope?.minSqft.toLocaleString()} - {archSpecs.recommendedSqftScope?.maxSqft.toLocaleString()} sqft floor plan.
+                            Recommended layout scope: {(archSpecs.recommendedSqftScope?.minSqft ?? 2500).toLocaleString()} - {(archSpecs.recommendedSqftScope?.maxSqft ?? 8500).toLocaleString()} sqft floor plan.
                           </p>
                         </div>
                       )}
@@ -681,15 +681,15 @@ export function ParcelIntelligenceWorkspaceModal({
                       <span className="flex items-center gap-2 text-sm">
                         <Sparkles className="h-5 w-5 text-emerald-600" /> Matched Workforce Grants &amp; Enterprise Capital
                       </span>
-                      <span className="text-emerald-800 font-extrabold text-sm">${grantMatches.totalGrantAllocation.toLocaleString()} Total Funding</span>
+                      <span className="text-emerald-800 font-extrabold text-sm">${(grantMatches.totalGrantAllocation ?? 0).toLocaleString()} Total Funding</span>
                     </div>
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {grantMatches.matchedGrants.map((grant) => (
+                      {(grantMatches.matchedGrants ?? []).map((grant) => (
                         <span
                           key={grant.id}
                           className="rounded-xl bg-white border border-emerald-300 px-3 py-1.5 text-xs font-mono text-emerald-900 font-bold shadow-sm"
                         >
-                          {grant.programName} (+${grant.allocatedAmount.toLocaleString()})
+                          {grant.programName} (+${(grant.allocatedAmount ?? 0).toLocaleString()})
                         </span>
                       ))}
                     </div>
