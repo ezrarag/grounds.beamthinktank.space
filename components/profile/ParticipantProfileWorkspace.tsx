@@ -37,7 +37,7 @@ import {
 import { parseExifLocation } from '@/lib/exif'
 import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { db, auth } from '@/lib/firebase'
+import { db, auth, sanitizeForFirestore } from '@/lib/firebase'
 import { ParcelErrorBoundary } from '@/components/ParcelErrorBoundary'
 import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import {
@@ -433,10 +433,10 @@ export function ParticipantProfileWorkspace() {
       id: `srch-${Date.now()}`,
       query: queryStr,
       address: parcelData?.address || queryStr,
-      taxkey: parcelData?.parcelId,
-      lat: parcelData?.lat,
-      lng: parcelData?.lng,
-      uploadedPhoto: activeUploadedPhoto || undefined,
+      ...(parcelData?.parcelId ? { taxkey: parcelData.parcelId } : {}),
+      ...(typeof parcelData?.lat === 'number' ? { lat: parcelData.lat } : {}),
+      ...(typeof parcelData?.lng === 'number' ? { lng: parcelData.lng } : {}),
+      ...(activeUploadedPhoto ? { uploadedPhoto: activeUploadedPhoto } : {}),
       mode,
       timestamp: new Date().toISOString(),
     }
@@ -445,9 +445,10 @@ export function ParticipantProfileWorkspace() {
       const updatedList = deduplicateSearchHistory([newItem, ...prev])
 
       if (user?.uid && db) {
+        const sanitizedData = sanitizeForFirestore({ searchHistory: updatedList })
         void setDoc(
           doc(db, 'participantProfiles', user.uid),
-          { searchHistory: updatedList },
+          sanitizedData,
           { merge: true }
         ).catch((err) => console.warn('Unable to record search history to Firestore:', err))
       }

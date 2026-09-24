@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import type { BeamAsset } from '@/lib/useAcquisitionSites'
 
+export type PropertyDispositionFilter = 'all' | 'vacant' | 'foreclosed' | 'commercial' | 'for_sale'
+
 interface InteractivePinMapCanvasProps {
   center: { lat: number; lng: number }
   onCoordsChange: (coords: { lat: number; lng: number }, autoInspect?: boolean) => void
@@ -68,6 +70,7 @@ export function InteractivePinMapCanvas({
   const [mapStyle, setMapStyle] = useState<'satellite' | 'dark'>('satellite')
   const [locatingUser, setLocatingUser] = useState(false)
 
+  const [dispositionFilter, setDispositionFilter] = useState<PropertyDispositionFilter>('all')
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number }>(center)
 
   // Synchronize map & marker position whenever `center` prop changes (from Geolocation or Search)
@@ -495,14 +498,65 @@ export function InteractivePinMapCanvas({
             </button>
           </div>
 
-          <button
-            onClick={() => onInspectParcel(currentCoords)}
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#88aa8f] px-5 py-2 text-xs font-bold text-[#07100c] hover:bg-[#77997e] transition shadow-md"
-          >
-            <Search className="h-3.5 w-3.5" />
-            Inspect Local Parcel →
-          </button>
+          {/* Property Disposition Category Filters */}
+          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] w-full pt-1 border-t border-white/10">
+            <span className="text-white/40 uppercase font-bold text-[9px] mr-1">Dispositions:</span>
+            <button
+              onClick={() => setDispositionFilter('all')}
+              type="button"
+              className={`rounded-full px-2.5 py-1 transition font-bold ${
+                dispositionFilter === 'all'
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              🌐 All Parcel Records
+            </button>
+            <button
+              onClick={() => setDispositionFilter('vacant')}
+              type="button"
+              className={`rounded-full px-2.5 py-1 transition font-bold ${
+                dispositionFilter === 'vacant'
+                  ? 'bg-amber-400 text-slate-950 shadow-sm'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              🌾 Vacant Lots &amp; Land Bank
+            </button>
+            <button
+              onClick={() => setDispositionFilter('foreclosed')}
+              type="button"
+              className={`rounded-full px-2.5 py-1 transition font-bold ${
+                dispositionFilter === 'foreclosed'
+                  ? 'bg-rose-500 text-white shadow-sm'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              ⚠️ Tax Lien / In-Rem
+            </button>
+            <button
+              onClick={() => setDispositionFilter('commercial')}
+              type="button"
+              className={`rounded-full px-2.5 py-1 transition font-bold ${
+                dispositionFilter === 'commercial'
+                  ? 'bg-sky-400 text-slate-950 shadow-sm'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              🏢 Commercial &amp; Mixed-Use Core
+            </button>
+            <button
+              onClick={() => setDispositionFilter('for_sale')}
+              type="button"
+              className={`rounded-full px-2.5 py-1 transition font-bold ${
+                dispositionFilter === 'for_sale'
+                  ? 'bg-purple-400 text-slate-950 shadow-sm'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              🏷️ For-Sale Assets
+            </button>
+          </div>
         </div>
       </div>
 
