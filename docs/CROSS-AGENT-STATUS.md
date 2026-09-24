@@ -58,6 +58,13 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
 - **90-Second Operating Loop Chapter 2 Video**: Wired official video asset (`Acquiring_tax-delinquent_municip...20260924191310.mp4`) into Chapter 2 (02. The Method: Nominal Deeds & Pre-Law).
 - **Mobile Touch Gesture Enhancements**: Implemented multi-axis touch tracking in `LandingShowcase.tsx` (`touchStartX`/`touchStartY`), requiring horizontal dominance before slide transitions, and applied `touch-pan-y overscroll-x-none` to prevent browser history navigation hijacking.
 - **Admin Auth & Exit Navigation**: Added exit controls and sign-out buttons in `app/portal/admin/page.tsx`, `LandingShowcaseManager.tsx`, and `AppHeader.tsx`, exporting `signOutUser()` from `lib/firebase.ts`.
+- **Rewired Admin Area (`/portal/acquisition`) with Unified Executive Operations Console**: Completely redesigned `/portal/acquisition` from a cramped 2-column layout to a full-width executive operations console (`ExecutiveOperationsConsole.tsx`) styled in BEAM emerald/gold. Aggregates live participant actions from the participant portal (`/portal/participant`), featuring:
+  - **Aggregate KPI Ribbon**: Enrolled participants, cumulative sweat-equity hours, HUD standard equity value (`hours × $30`), active work roster shift enrollments, pending asset inquiries, and open stakeholder agenda topics.
+  - **Tab 1: Participant Roster & Labor Shifts**: Real-time searchable table of participant profiles, pathway roles, hours, purchasing power, active roster attachments (Carpentry, Electrical, Acoustics, Demolition, Stewardship), and linked $1 homesteads.
+  - **Tab 2: Asset Inquiries & Tenancy Queue**: Live stream of inbound `assetInterest` inquiries (commercial tenancy, co-development, land trust equity), with one-click status transitions ("Mark Reviewed", "Approve for Diligence").
+  - **Tab 3: 14-Day Acquisition Pipeline & Proximity Map**: Live Mapbox proximity dispatch canvas (`LiveDispatchMap`), site stage badges, valuation/repair budgets, and quick property intake form (`AddPropertyForm`).
+  - **Tab 4: Stakeholder Meeting Agenda Queue**: Live items from `agendaQueue` submitted by Denail, DeTania, Rick, and Ezra, with status toggling ("Queued" vs "Addressed").
+  - **Header Controls**: Direct switching between Acquisition Console, Landing & 90s Loop Manager, Participant View, and global Sign Out.
 
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*
