@@ -30,7 +30,45 @@ export interface LandingSlide {
   branchOptions?: SlideBranchOption[]
   videoPlaceholderUrl?: string
   fallbackImageUrl: string
+  backgroundImages?: string[]
 }
+
+export interface OperatingLoopChapter {
+  id: string
+  time: string
+  title: string
+  text: string
+  videoUrl?: string
+}
+
+export const defaultOperatingLoopChapters: OperatingLoopChapter[] = [
+  {
+    id: 'ch-1',
+    time: '0:00',
+    title: '01. The Hook: 14 Days vs. 18 Months',
+    text: 'Traditional real estate takes 18 months and millions in predatory bank debt. Here is how BEAM acquires and activates community property in 14 days.',
+    videoUrl:
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2F90sec%2FBEAM_Grounds_changes_real_estate_20260924185930.mp4?alt=media&token=2decee57-c8ed-4e0d-8426-c05dc87b65b4',
+  },
+  {
+    id: 'ch-2',
+    time: '0:20',
+    title: '02. The Method: Nominal Deeds & Pre-Law',
+    text: 'We use nominal title transfers, abandonment clauses, and standardized pre-law memos to step into tax-delinquent properties instantly, turning closed liabilities back into active civic assets.',
+  },
+  {
+    id: 'ch-3',
+    time: '0:45',
+    title: '03. The Engine: BFCU Labor Collateral',
+    text: 'Local trade and music cohorts fix the space to earn accredited sweat-equity tokens, sheltered under our non-profit umbrella and backed by BEAM Federal Credit Union for rehab capital.',
+  },
+  {
+    id: 'ch-4',
+    time: '1:10',
+    title: '04. The Shield: 99-Year Community Trust',
+    text: 'Underlying land is deeded to a permanent Community Land Trust so no one can flip the neighborhood. Participants live free or cost-based with zero credit score gatekeeping.',
+  },
+]
 
 export const landingSlides: LandingSlide[] = [
   {
@@ -89,9 +127,11 @@ export const landingSlides: LandingSlide[] = [
         href: '/properties',
       },
     ],
-    // High-resolution architectural / urban infrastructure imagery with dark grading
     fallbackImageUrl:
       'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FPeople_working_on_real_estate_20260924164840.jpg?alt=media&token=50dc18ca-de33-43ae-b3fd-be58bc389500',
+    backgroundImages: [
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FPeople_working_on_real_estate_20260924164840.jpg?alt=media&token=50dc18ca-de33-43ae-b3fd-be58bc389500',
+    ],
   },
   {
     id: 'stakeholder-briefing',
@@ -149,6 +189,9 @@ export const landingSlides: LandingSlide[] = [
     ],
     fallbackImageUrl:
       'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FFullscreen_no_laptop_shown_20260924164948.jpg?alt=media&token=359610f3-ee9c-40ac-93ca-8a76ddf7f17f',
+    backgroundImages: [
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FFullscreen_no_laptop_shown_20260924164948.jpg?alt=media&token=359610f3-ee9c-40ac-93ca-8a76ddf7f17f',
+    ],
   },
   {
     id: 'community-shield',
@@ -207,7 +250,10 @@ export const landingSlides: LandingSlide[] = [
       },
     ],
     fallbackImageUrl:
-      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=2000&q=85',
-    videoPlaceholderUrl: 'https://assets.mixkit.co/videos/preview/mixkit-group-of-friends-walking-in-a-city-neighborhood-42935-large.mp4',
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FPeople_entering_housing_facility_20260924182706.jpg?alt=media&token=c8d7b544-14ad-4f21-ba62-b9da168c2707',
+    backgroundImages: [
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FPeople_entering_housing_facility_20260924182706.jpg?alt=media&token=c8d7b544-14ad-4f21-ba62-b9da168c2707',
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FSimplify_people_and_perspective_20260924183718.jpg?alt=media&token=4d0655a8-ed8a-4b55-9de0-49772fc373a2',
+    ],
   },
 ]

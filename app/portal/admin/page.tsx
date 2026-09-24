@@ -49,9 +49,15 @@ const CARDS = [
     body: 'Register a new city/state with its open-data source so you can add sites there.',
   },
   {
+    href: '/portal/admin/landing',
+    icon: ImageIcon,
+    title: 'Landing Showcase & 90s Loop',
+    body: 'Upload and modify background artwork for the 3 landing slides, and configure videos for the 90-second executive briefing.',
+  },
+  {
     href: '/portal/admin/pathways',
     icon: ImageIcon,
-    title: 'Landing media',
+    title: 'Pathway card media',
     body: 'Manage the media shown behind each pathway card on the public landing page.',
   },
   {

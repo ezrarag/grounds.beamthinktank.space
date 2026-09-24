@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronLeft, ChevronRight, Play, MessageSquarePlus, Maximize2 } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Play, MessageSquarePlus, Maximize2, Sparkles } from 'lucide-react'
 import { landingSlides, type LandingSlide } from '@/lib/landingSlides'
+import { useLandingConfig } from '@/lib/useLandingConfig'
 import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import { SlideEscalationDrawer } from '@/components/landing/SlideEscalationDrawer'
 import { ExecutiveBriefingModal } from '@/components/landing/ExecutiveBriefingModal'
@@ -16,8 +17,12 @@ function pad(n: number) {
   return String(n + 1).padStart(2, '0')
 }
 
-export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSlide[] }) {
+export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSlide[] }) {
+  const config = useLandingConfig()
+  const slides = initialSlides ?? config.slides
+
   const [index, setIndex] = useState(0)
+  const [bgIndices, setBgIndices] = useState<Record<string, number>>({})
   const [isEscalated, setIsEscalated] = useState(false)
   const [isBriefingOpen, setIsBriefingOpen] = useState(false)
   const [isAgendaOpen, setIsAgendaOpen] = useState(false)
@@ -37,7 +42,6 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      // Don't intercept if modals/drawers are open
       if (isEscalated || isBriefingOpen || isAgendaOpen) {
         if (event.key === 'Escape') {
           setIsEscalated(false)
@@ -75,14 +79,26 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
     { label: '03 Community Shield', href: '#slide-2' },
     { label: 'Properties Directory ↗', href: '/properties' },
     { label: 'Participant Portal ↗', href: '/portal/participant' },
+    { label: 'Admin Console ↗', href: '/portal/admin/landing' },
   ]
 
-  function handleNavSelect(idx: number) {
-    setIndex(idx)
-    setIsEscalated(false)
-  }
-
   if (!slide) return null
+
+  // Support multiple background images for the slide
+  const currentImages =
+    slide.backgroundImages && slide.backgroundImages.length > 0
+      ? slide.backgroundImages
+      : [slide.fallbackImageUrl].filter(Boolean)
+  const activeBgIndex = (bgIndices[slide.id] ?? 0) % (currentImages.length || 1)
+  const activeImageUrl = currentImages[activeBgIndex] || slide.fallbackImageUrl
+
+  function cycleBackgroundVariant() {
+    if (currentImages.length <= 1) return
+    setBgIndices((prev) => ({
+      ...prev,
+      [slide.id]: (activeBgIndex + 1) % currentImages.length,
+    }))
+  }
 
   return (
     <>
@@ -105,14 +121,14 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
             playsInline
             className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-screen"
           />
-        ) : slide.fallbackImageUrl && !imgFailed[slide.id] ? (
+        ) : activeImageUrl && !imgFailed[activeImageUrl] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            key={slide.id}
-            src={slide.fallbackImageUrl}
+            key={activeImageUrl}
+            src={activeImageUrl}
             alt={slide.shortTitle}
-            onError={() => setImgFailed((current) => ({ ...current, [slide.id]: true }))}
-            className="absolute inset-0 h-full w-full object-cover opacity-45"
+            onError={() => setImgFailed((current) => ({ ...current, [activeImageUrl]: true }))}
+            className="absolute inset-0 h-full w-full object-cover opacity-45 transition-opacity duration-700"
           />
         ) : null}
 
@@ -128,8 +144,23 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
           />
         </div>
 
-        {/* Quick Direct Controls at Top Right */}
+        {/* Top Right Direct Controls & Variant Switcher */}
         <div className="absolute right-5 top-5 z-30 flex items-center gap-3 sm:right-8 sm:top-7">
+          {/* Multiple Artwork Switcher */}
+          {currentImages.length > 1 ? (
+            <button
+              type="button"
+              onClick={cycleBackgroundVariant}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/90 backdrop-blur-md hover:bg-black/70 hover:text-white transition"
+              title="Click to toggle between artwork variants"
+            >
+              <Sparkles className="h-3 w-3 text-beam-gold" />
+              <span>
+                Artwork {activeBgIndex + 1}/{currentImages.length}
+              </span>
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => setIsBriefingOpen(true)}
@@ -240,9 +271,7 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
                   aria-current={itemIndex === index}
                   className={cn(
                     'h-2 rounded-full transition-all',
-                    itemIndex === index
-                      ? 'w-7 bg-white'
-                      : 'w-2 bg-white/35 hover:bg-white/70',
+                    itemIndex === index ? 'w-7 bg-white' : 'w-2 bg-white/35 hover:bg-white/70',
                   )}
                 />
               ))}
@@ -251,7 +280,7 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
         ) : null}
       </section>
 
-      {/* Escalation Drawer (Slides up when user wants to see more) */}
+      {/* Escalation Drawer */}
       <SlideEscalationDrawer
         slide={slide}
         isOpen={isEscalated}
@@ -265,13 +294,11 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
         isOpen={isBriefingOpen}
         onClose={() => setIsBriefingOpen(false)}
         onOpenAgenda={() => setIsAgendaOpen(true)}
+        chapters={config.operatingLoopChapters}
       />
 
       {/* Stakeholder Agenda Queue Modal */}
-      <AgendaQueueModal
-        isOpen={isAgendaOpen}
-        onClose={() => setIsAgendaOpen(false)}
-      />
+      <AgendaQueueModal isOpen={isAgendaOpen} onClose={() => setIsAgendaOpen(false)} />
     </>
   )
 }

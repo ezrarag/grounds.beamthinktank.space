@@ -1,42 +1,31 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Play, Pause, RotateCcw, MessageSquarePlus, ArrowRight, ShieldCheck, Coins } from 'lucide-react'
+import { X, Play, Pause, RotateCcw, MessageSquarePlus, Volume2, VolumeX } from 'lucide-react'
+import { defaultOperatingLoopChapters, type OperatingLoopChapter } from '@/lib/landingSlides'
 
 interface ExecutiveBriefingModalProps {
   isOpen: boolean
   onClose: () => void
   onOpenAgenda: () => void
+  chapters?: OperatingLoopChapter[]
 }
 
-const CHAPTERS = [
-  {
-    time: '0:00',
-    title: '01. The Hook: 14 Days vs. 18 Months',
-    text: 'Traditional real estate takes 18 months and millions in predatory bank debt. Here is how BEAM acquires and activates community property in 14 days.',
-  },
-  {
-    time: '0:20',
-    title: '02. The Method: Nominal Deeds & Pre-Law',
-    text: 'We use nominal title transfers, abandonment clauses, and standardized pre-law memos to step into tax-delinquent properties instantly, turning closed liabilities back into active civic assets.',
-  },
-  {
-    time: '0:45',
-    title: '03. The Engine: BFCU Labor Collateral',
-    text: 'Local trade and music cohorts fix the space to earn accredited sweat-equity tokens, sheltered under our non-profit umbrella and backed by BEAM Federal Credit Union for rehab capital.',
-  },
-  {
-    time: '1:10',
-    title: '04. The Shield: 99-Year Community Trust',
-    text: 'Underlying land is deeded to a permanent Community Land Trust so no one can flip the neighborhood. Participants live free or cost-based with zero credit score gatekeeping.',
-  },
-]
-
-export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: ExecutiveBriefingModalProps) {
+export function ExecutiveBriefingModal({
+  isOpen,
+  onClose,
+  onOpenAgenda,
+  chapters = defaultOperatingLoopChapters,
+}: ExecutiveBriefingModalProps) {
   const [isPlaying, setIsPlaying] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [activeChapter, setActiveChapter] = useState(0)
   const [progress, setProgress] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  const chapterList = chapters.length > 0 ? chapters : defaultOperatingLoopChapters
+  const current = chapterList[activeChapter] ?? chapterList[0]
 
   useEffect(() => {
     if (!isOpen) {
@@ -49,13 +38,23 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
     setIsPlaying(true)
   }, [isOpen])
 
+  // Sync play/pause with HTML video element
+  useEffect(() => {
+    if (!videoRef.current) return
+    if (isPlaying) {
+      videoRef.current.play().catch(() => undefined)
+    } else {
+      videoRef.current.pause()
+    }
+  }, [isPlaying, current?.videoUrl])
+
   useEffect(() => {
     if (!isOpen || !isPlaying) {
       if (timerRef.current) clearInterval(timerRef.current)
       return
     }
 
-    // 80-second loop total (20s per chapter)
+    // 80-second loop total (20s per chapter approx)
     const intervalMs = 200
     const stepPct = (intervalMs / (80 * 1000)) * 100
 
@@ -66,7 +65,10 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
           setIsPlaying(false)
           return 100
         }
-        const chapterIdx = Math.min(Math.floor((next / 100) * CHAPTERS.length), CHAPTERS.length - 1)
+        const chapterIdx = Math.min(
+          Math.floor((next / 100) * chapterList.length),
+          chapterList.length - 1,
+        )
         setActiveChapter(chapterIdx)
         return next
       })
@@ -75,13 +77,13 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [isOpen, isPlaying])
+  }, [isOpen, isPlaying, chapterList.length])
 
-  if (!isOpen) return null
+  if (!isOpen || !current) return null
 
   function selectChapter(idx: number) {
     setActiveChapter(idx)
-    setProgress((idx / CHAPTERS.length) * 100)
+    setProgress((idx / chapterList.length) * 100)
     setIsPlaying(true)
   }
 
@@ -91,13 +93,15 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
     setIsPlaying(true)
   }
 
-  const current = CHAPTERS[activeChapter]
+  const activeVideoUrl =
+    current.videoUrl ||
+    'https://assets.mixkit.co/videos/preview/mixkit-modern-buildings-in-a-financial-district-41484-large.mp4'
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
     >
       {/* Backdrop */}
       <div
@@ -125,18 +129,29 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
           </button>
         </div>
 
-        {/* Video / Visual Simulation Canvas */}
-        <div className="relative aspect-video w-full overflow-hidden bg-black/60">
-          {/* Subtle Ambient Video / Motion Graphic Background */}
+        {/* Video Canvas */}
+        <div className="relative aspect-video w-full overflow-hidden bg-black/80">
           <video
-            src="https://assets.mixkit.co/videos/preview/mixkit-modern-buildings-in-a-financial-district-41484-large.mp4"
+            ref={videoRef}
+            key={activeVideoUrl}
+            src={activeVideoUrl}
             autoPlay
             loop
-            muted
+            muted={isMuted}
             playsInline
-            className="absolute inset-0 h-full w-full object-cover opacity-35"
+            className="absolute inset-0 h-full w-full object-cover opacity-75"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1712] via-[#0b1712]/60 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1712] via-[#0b1712]/40 to-black/30" />
+
+          {/* Audio toggle overlay */}
+          <button
+            type="button"
+            onClick={() => setIsMuted(!isMuted)}
+            className="absolute top-4 right-4 z-20 rounded-full border border-white/20 bg-black/50 p-2 text-white/80 backdrop-blur-md hover:bg-black/80 hover:text-white transition"
+            aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+          >
+            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
 
           {/* Chapter Overlay Content */}
           <div className="relative z-10 flex h-full flex-col justify-end p-6 sm:p-8">
@@ -145,7 +160,7 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
               <span>·</span>
               <span>{current.title}</span>
             </div>
-            <p className="mt-2 max-w-2xl text-base font-medium leading-relaxed text-white drop-shadow sm:text-xl">
+            <p className="mt-2 max-w-2xl text-base font-medium leading-relaxed text-white drop-shadow-md sm:text-xl">
               &ldquo;{current.text}&rdquo;
             </p>
           </div>
@@ -160,10 +175,10 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
         </div>
 
         {/* Chapter Scrubbers */}
-        <div className="grid grid-cols-4 gap-2 border-b border-white/10 bg-white/[0.02] p-3 text-xs">
-          {CHAPTERS.map((ch, idx) => (
+        <div className="grid grid-cols-2 gap-2 border-b border-white/10 bg-white/[0.02] p-3 text-xs sm:grid-cols-4">
+          {chapterList.map((ch, idx) => (
             <button
-              key={ch.time}
+              key={ch.id || ch.time}
               type="button"
               onClick={() => selectChapter(idx)}
               className={`rounded-lg px-2.5 py-1.5 text-left font-mono transition ${
@@ -179,7 +194,7 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
         </div>
 
         {/* Action Bar & Branching Paths */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6 bg-[#07100c]">
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-6 bg-[#07100c]">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -199,7 +214,6 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
             </button>
           </div>
 
-          {/* Quick Branching Actions */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"

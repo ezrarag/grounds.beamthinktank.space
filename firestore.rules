@@ -81,6 +81,13 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Landing page configuration (slide backgrounds & 90s operating loop chapters):
+    // Publicly readable for landing showcase; writable only by admins.
+    match /landingConfig/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // City registry: anyone can read (used for public labels/filters); any
     // signed-in participant can add a city; only admins edit/delete existing.
     match /cities/{cityId} {

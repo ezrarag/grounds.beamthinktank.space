@@ -52,7 +52,10 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
 - **Scaffold Executive Briefing**: Added `<ExecutiveBriefingModal />` featuring an interactive 80-90s chapter scrubber (Hook, Method, Engine, Shield) with working background ambient loop and branching options to queue agenda items or inspect branches.
 - **Live Stakeholder Agenda Queue**: Added `/api/agenda-queue/route.ts` with guaranteed local write to Grounds Firestore `agendaQueue`, updated `firestore.rules` for secure public queueing, and created `<AgendaQueueModal />`.
 - **OVERBEAR Mirroring Architecture Guide**: Authored `docs/OVERBEAR-CROSS-DOMAIN-MIRRORING-GUIDE.md` defining how satellite divisions commit locally first and how the OVERBEAR bridge will asynchronously mirror events into `home.beamthinktank.space`.
-- **Compilation**: Verified clean build via `npx tsc --noEmit`.
+- **Slide 3 Dual Artwork & Dynamic Background Variants**: Integrated both `People_entering_housing_facility` and `Simplify_people_and_perspective` into Slide 3 with live variant toggling and expanded concept gallery in `<SlideEscalationDrawer />`.
+- **90-Second Operating Loop Chapter 1 Video**: Integrated the official `BEAM_Grounds_changes_real_estate_20260924185930.mp4` into Chapter 1 (14 Days vs 18 Months) with per-chapter video URL switching and volume unmuting in `<ExecutiveBriefingModal />`.
+- **Admin Landing Showcase & 90s Loop Manager (`/portal/admin/landing`)**: Built comprehensive admin workspace (`LandingShowcaseManager.tsx`) allowing admins to add/upload slide backgrounds, set primary artwork, edit 90s operating loop narration, and upload/replace chapter videos, persisting directly to Firestore `landingConfig/showcase` with live client reactivity via `useLandingConfig`.
+- **Firestore Rules**: Added rule for `match /landingConfig/{docId}` (publicly readable, admin writable).
 
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*

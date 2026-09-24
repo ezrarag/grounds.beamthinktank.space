@@ -185,6 +185,33 @@ export function SlideEscalationDrawer({
           </div>
         ) : null}
 
+        {/* Visual Artwork Gallery if multiple variants exist */}
+        {slide.backgroundImages && slide.backgroundImages.length > 1 ? (
+          <div className="mt-8">
+            <h3 className="font-mono text-xs uppercase tracking-wider text-white/50 mb-3">
+              Concept Artwork & Spatial Studies ({slide.backgroundImages.length} Views)
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {slide.backgroundImages.map((imgUrl, i) => (
+                <div
+                  key={imgUrl}
+                  className="group relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black/40"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imgUrl}
+                    alt={`Study ${i + 1}`}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                    <span className="font-mono text-[10px] text-white/90">Study {i + 1}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {/* Footer Actions */}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6">
           <div className="flex flex-wrap gap-2">
