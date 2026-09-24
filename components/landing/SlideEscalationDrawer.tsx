@@ -48,7 +48,7 @@ export function SlideEscalationDrawer({
         {/* Eyebrow & Index */}
         <div className="flex items-center gap-3">
           <span className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-beam-gold">
-            {slide.stepNumber} // {slide.eyebrow}
+            {slide.stepNumber} {'//'} {slide.eyebrow}
           </span>
         </div>
 

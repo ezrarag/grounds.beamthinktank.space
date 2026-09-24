@@ -112,7 +112,7 @@ export function ExecutiveBriefingModal({ isOpen, onClose, onOpenAgenda }: Execut
           <div className="flex items-center gap-3">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <p className="font-mono text-xs uppercase tracking-widest text-white/70">
-              Executive Briefing // 90-Second Operating Loop
+              Executive Briefing {'//'} 90-Second Operating Loop
             </p>
           </div>
           <button

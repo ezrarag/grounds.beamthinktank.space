@@ -157,7 +157,7 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
             {/* Eyebrow */}
             <div className="flex items-center gap-2.5">
               <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-beam-gold">
-                {slide.stepNumber} // {slide.eyebrow}
+                {slide.stepNumber} {'//'} {slide.eyebrow}
               </span>
             </div>
 
