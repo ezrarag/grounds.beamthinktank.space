@@ -112,7 +112,7 @@ export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSl
             src={slide.fallbackImageUrl}
             alt={slide.shortTitle}
             onError={() => setImgFailed((current) => ({ ...current, [slide.id]: true }))}
-            className="absolute inset-0 h-full w-full object-cover opacity-30"
+            className="absolute inset-0 h-full w-full object-cover opacity-45"
           />
         ) : null}
 

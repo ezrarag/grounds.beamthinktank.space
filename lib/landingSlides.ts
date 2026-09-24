@@ -91,8 +91,7 @@ export const landingSlides: LandingSlide[] = [
     ],
     // High-resolution architectural / urban infrastructure imagery with dark grading
     fallbackImageUrl:
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=85',
-    videoPlaceholderUrl: 'https://assets.mixkit.co/videos/preview/mixkit-modern-buildings-in-a-financial-district-41484-large.mp4',
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FPeople_working_on_real_estate_20260924164840.jpg?alt=media&token=50dc18ca-de33-43ae-b3fd-be58bc389500',
   },
   {
     id: 'stakeholder-briefing',
@@ -149,8 +148,7 @@ export const landingSlides: LandingSlide[] = [
       },
     ],
     fallbackImageUrl:
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2000&q=85',
-    videoPlaceholderUrl: 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-people-working-together-in-an-office-43391-large.mp4',
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2FCards%2FFullscreen_no_laptop_shown_20260924164948.jpg?alt=media&token=359610f3-ee9c-40ac-93ca-8a76ddf7f17f',
   },
   {
     id: 'community-shield',
