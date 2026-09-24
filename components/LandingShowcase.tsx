@@ -1,14 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import { showcaseProperties, type ShowcaseProperty } from '@/lib/landingShowcase'
-import { cityLabel } from '@/lib/cities'
-import { heroImage } from '@/lib/media'
-import { getPropertyHref } from '@/lib/propertySlugs'
-import { usePublicAcquisitionSites } from '@/lib/useAcquisitionSites'
+import { ArrowRight, ChevronLeft, ChevronRight, Play, MessageSquarePlus, Maximize2 } from 'lucide-react'
+import { landingSlides, type LandingSlide } from '@/lib/landingSlides'
 import { BeamGroundsNav } from '@/components/BeamGroundsNav'
+import { SlideEscalationDrawer } from '@/components/landing/SlideEscalationDrawer'
+import { ExecutiveBriefingModal } from '@/components/landing/ExecutiveBriefingModal'
+import { AgendaQueueModal } from '@/components/landing/AgendaQueueModal'
 import { cn } from '@/lib/utils'
 
 const SWIPE_THRESHOLD = 40
@@ -17,67 +16,46 @@ function pad(n: number) {
   return String(n + 1).padStart(2, '0')
 }
 
-export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[] }) {
-  const { sites } = usePublicAcquisitionSites()
+export function LandingShowcase({ slides = landingSlides }: { slides?: LandingSlide[] }) {
   const [index, setIndex] = useState(0)
-  const [failed, setFailed] = useState<Record<string, boolean>>({})
+  const [isEscalated, setIsEscalated] = useState(false)
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false)
+  const [isAgendaOpen, setIsAgendaOpen] = useState(false)
+  const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({})
   const touchStartX = useRef<number | null>(null)
 
-  // Live published properties drive the showcase; fall back to the static seed
-  // when none are published yet (or Firebase isn't reachable).
-  const live = useMemo<ShowcaseProperty[]>(
-    () =>
-      sites
-        .slice()
-        .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
-        .map((site) => ({
-          id: site.id,
-          name: site.publicTitle || site.name,
-          city: cityLabel(site.regionId),
-          imageUrl: heroImage(site),
-          href: getPropertyHref(site),
-        })),
-    [sites],
-  )
-
-  const allItems = properties ?? (live.length > 0 ? live : showcaseProperties)
-
-  // Cities with front-end visibility — populates the Grounds dropdown.
-  const cityOptions = useMemo(
-    () => Array.from(new Set(allItems.map((item) => item.city).filter(Boolean))),
-    [allItems],
-  )
-  const [cityFilter, setCityFilter] = useState<string | null>(null)
-
-  const items = useMemo(
-    () => (cityFilter ? allItems.filter((item) => item.city === cityFilter) : allItems),
-    [allItems, cityFilter],
-  )
-  const count = items.length
-  const property = items[index] ?? items[0]
-
-  useEffect(() => {
-    if (index >= count) setIndex(0)
-  }, [count, index])
-
-  // If the active city filter no longer matches any property, reset to all.
-  useEffect(() => {
-    if (cityFilter && !cityOptions.includes(cityFilter)) setCityFilter(null)
-  }, [cityFilter, cityOptions])
+  const count = slides.length
+  const slide = slides[index] ?? slides[0]
 
   const go = useCallback(
-    (delta: number) => setIndex((current) => (current + delta + count) % count),
+    (delta: number) => {
+      setIsEscalated(false)
+      setIndex((current) => (current + delta + count) % count)
+    },
     [count],
   )
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      // Don't intercept if modals/drawers are open
+      if (isEscalated || isBriefingOpen || isAgendaOpen) {
+        if (event.key === 'Escape') {
+          setIsEscalated(false)
+          setIsBriefingOpen(false)
+          setIsAgendaOpen(false)
+        }
+        return
+      }
+
       if (event.key === 'ArrowLeft') go(-1)
       if (event.key === 'ArrowRight') go(1)
+      if (event.key === ' ' || event.key === 'Enter') {
+        setIsEscalated(true)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go])
+  }, [go, isEscalated, isBriefingOpen, isAgendaOpen])
 
   function handleTouchStart(event: TouchEvent<HTMLElement>) {
     touchStartX.current = event.touches[0]?.clientX ?? null
@@ -91,95 +69,209 @@ export function LandingShowcase({ properties }: { properties?: ShowcaseProperty[
     touchStartX.current = null
   }
 
-  if (!property) return null
+  const groundsLinks = [
+    { label: '01 How It Makes Money', href: '#slide-0' },
+    { label: '02 Stakeholder Agenda', href: '#slide-1' },
+    { label: '03 Community Shield', href: '#slide-2' },
+    { label: 'Properties Directory ↗', href: '/properties' },
+    { label: 'Participant Portal ↗', href: '/portal/participant' },
+  ]
+
+  function handleNavSelect(idx: number) {
+    setIndex(idx)
+    setIsEscalated(false)
+  }
+
+  if (!slide) return null
 
   return (
-    <section
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      className="relative h-[100dvh] w-full overflow-hidden bg-[#07100c]"
-    >
-      {/* Background visual */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,#3d6c57_0%,#16322b_45%,#0b1712_100%)]" />
-      {property.imageUrl && !failed[property.id] ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={property.id}
-          src={property.imageUrl}
-          alt={property.name}
-          onError={() => setFailed((current) => ({ ...current, [property.id]: true }))}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/55" />
+    <>
+      <section
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative h-[100dvh] w-full overflow-hidden bg-[#07100c] select-none"
+      >
+        {/* Ambient Gradient Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,#1c382e_0%,#0e1f1a_45%,#07100c_100%)]" />
 
-      {/* Brand + menus (header is dissolved on the landing page) */}
-      <div className="absolute left-5 top-5 z-50 sm:left-8 sm:top-7">
-        <BeamGroundsNav cities={cityOptions} activeCity={cityFilter} onSelectCity={setCityFilter} />
-      </div>
+        {/* Video / Background Layer */}
+        {slide.videoPlaceholderUrl ? (
+          <video
+            key={slide.videoPlaceholderUrl}
+            src={slide.videoPlaceholderUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-screen"
+          />
+        ) : slide.fallbackImageUrl && !imgFailed[slide.id] ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={slide.id}
+            src={slide.fallbackImageUrl}
+            alt={slide.shortTitle}
+            onError={() => setImgFailed((current) => ({ ...current, [slide.id]: true }))}
+            className="absolute inset-0 h-full w-full object-cover opacity-30"
+          />
+        ) : null}
 
-      {/* Counter */}
-      {count > 1 ? (
-        <p className="absolute right-5 top-5 font-mono text-[11px] tracking-[0.2em] text-white/55 sm:right-8 sm:top-7">
-          {pad(index)} <span className="text-white/30">/ {pad(count - 1)}</span>
-        </p>
-      ) : null}
+        {/* Dark readability overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#07100c] via-black/50 to-black/40" />
 
-      {/* Simplified content: city, title, link */}
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-16 sm:px-10 sm:pb-20">
-        <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-beam-gold">{property.city}</p>
-          <h1 className="mt-3 font-display text-4xl leading-[1.05] text-white drop-shadow-sm sm:text-6xl">
-            {property.name}
-          </h1>
-          <Link
-            href={property.href}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 text-sm font-semibold text-[#0b1712] transition hover:bg-white"
-          >
-            View on Properties
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+        {/* Top Navigation Bar */}
+        <div className="absolute left-5 top-5 z-30 sm:left-8 sm:top-7">
+          <BeamGroundsNav
+            groundsLinks={groundsLinks}
+            activeCity={null}
+            onSelectCity={() => undefined}
+          />
         </div>
-      </div>
 
-      {/* Prev / next */}
-      {count > 1 ? (
-        <>
+        {/* Quick Direct Controls at Top Right */}
+        <div className="absolute right-5 top-5 z-30 flex items-center gap-3 sm:right-8 sm:top-7">
           <button
             type="button"
-            onClick={() => go(-1)}
-            aria-label="Previous property"
-            className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/20 bg-black/30 p-2.5 text-white backdrop-blur-md transition hover:bg-black/55 sm:flex"
+            onClick={() => setIsBriefingOpen(true)}
+            className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-emerald-300 backdrop-blur-md hover:bg-emerald-900/50 transition sm:inline-flex"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <Play className="h-3 w-3 fill-current" />
+            90s Briefing
           </button>
           <button
             type="button"
-            onClick={() => go(1)}
-            aria-label="Next property"
-            className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/20 bg-black/30 p-2.5 text-white backdrop-blur-md transition hover:bg-black/55 sm:flex"
+            onClick={() => setIsAgendaOpen(true)}
+            className="hidden items-center gap-2 rounded-full border border-amber-500/30 bg-amber-950/40 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-amber-200 backdrop-blur-md hover:bg-amber-900/50 transition sm:inline-flex"
           >
-            <ChevronRight className="h-5 w-5" />
+            <MessageSquarePlus className="h-3 w-3" />
+            Agenda Queue
           </button>
+          <p className="font-mono text-[11px] tracking-[0.2em] text-white/60">
+            {pad(index)} <span className="text-white/30">/ {pad(count - 1)}</span>
+          </p>
+        </div>
 
-          {/* Dots */}
-          <div className="absolute inset-x-0 bottom-7 flex items-center justify-center gap-2">
-            {items.map((item, itemIndex) => (
+        {/* Minimal Bottom Hero — Starts Small, Escalates on Click */}
+        <div className="absolute inset-x-0 bottom-0 z-20 px-5 pb-16 sm:px-10 sm:pb-20">
+          <div className="mx-auto max-w-4xl">
+            {/* Eyebrow */}
+            <div className="flex items-center gap-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-beam-gold">
+                {slide.stepNumber} // {slide.eyebrow}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h1 className="mt-2 font-display text-3xl leading-[1.1] text-white drop-shadow-sm sm:text-5xl md:text-6xl">
+              {slide.shortTitle}
+            </h1>
+
+            {/* Short Punchy Summary */}
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base md:text-lg">
+              {slide.shortSummary}
+            </p>
+
+            {/* Action Buttons & Fast Escalation Triggers */}
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
-                key={item.id}
                 type="button"
-                onClick={() => setIndex(itemIndex)}
-                aria-label={`Go to ${item.name}`}
-                aria-current={itemIndex === index}
-                className={cn(
-                  'h-2 rounded-full transition-all',
-                  itemIndex === index ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70',
-                )}
-              />
-            ))}
+                onClick={() => setIsEscalated(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#07100c] shadow-lg transition hover:bg-white/90"
+              >
+                {slide.primaryCta.label}
+                <Maximize2 className="h-4 w-4" />
+              </button>
+
+              {index === 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setIsBriefingOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-4 py-3 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/10"
+                >
+                  <Play className="h-4 w-4 fill-current text-emerald-400" />
+                  Watch 90s Loop
+                </button>
+              ) : null}
+
+              {slide.secondaryCta ? (
+                <Link
+                  href={slide.secondaryCta.href}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/80 backdrop-blur-md transition hover:bg-white/10 hover:text-white"
+                >
+                  {slide.secondaryCta.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+            </div>
           </div>
-        </>
-      ) : null}
-    </section>
+        </div>
+
+        {/* Carousel Arrow Controls */}
+        {count > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label="Previous process slide"
+              className="absolute left-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-3 text-white backdrop-blur-md transition hover:bg-black/70 sm:flex"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label="Next process slide"
+              className="absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-3 text-white backdrop-blur-md transition hover:bg-black/70 sm:flex"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+
+            {/* Bottom Dots & Step Indicator */}
+            <div className="absolute inset-x-0 bottom-6 z-20 flex items-center justify-center gap-2.5">
+              {slides.map((s, itemIndex) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    setIndex(itemIndex)
+                    setIsEscalated(false)
+                  }}
+                  aria-label={`Go to slide ${s.stepNumber}`}
+                  aria-current={itemIndex === index}
+                  className={cn(
+                    'h-2 rounded-full transition-all',
+                    itemIndex === index
+                      ? 'w-7 bg-white'
+                      : 'w-2 bg-white/35 hover:bg-white/70',
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      {/* Escalation Drawer (Slides up when user wants to see more) */}
+      <SlideEscalationDrawer
+        slide={slide}
+        isOpen={isEscalated}
+        onClose={() => setIsEscalated(false)}
+        onOpenBriefing={() => setIsBriefingOpen(true)}
+        onOpenAgenda={() => setIsAgendaOpen(true)}
+      />
+
+      {/* 90-Second Executive Briefing Video / Audio Modal */}
+      <ExecutiveBriefingModal
+        isOpen={isBriefingOpen}
+        onClose={() => setIsBriefingOpen(false)}
+        onOpenAgenda={() => setIsAgendaOpen(true)}
+      />
+
+      {/* Stakeholder Agenda Queue Modal */}
+      <AgendaQueueModal
+        isOpen={isAgendaOpen}
+        onClose={() => setIsAgendaOpen(false)}
+      />
+    </>
   )
 }

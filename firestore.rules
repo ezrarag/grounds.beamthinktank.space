@@ -73,6 +73,14 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Stakeholder meeting agenda queue: anyone may submit; only admins can read/manage.
+    match /agendaQueue/{queueId} {
+      allow create: if request.resource.data.topic is string
+        && request.resource.data.topic.size() > 0
+        && request.resource.data.status == 'queued';
+      allow read, update, delete: if isAdmin();
+    }
+
     // City registry: anyone can read (used for public labels/filters); any
     // signed-in participant can add a city; only admins edit/delete existing.
     match /cities/{cityId} {
