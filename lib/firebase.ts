@@ -1,5 +1,10 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
+
+export async function signOutUser() {
+  if (!auth) return
+  return signOut(auth)
+}
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 

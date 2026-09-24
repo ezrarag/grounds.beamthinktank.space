@@ -55,7 +55,9 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
 - **Slide 3 Dual Artwork & Dynamic Background Variants**: Integrated both `People_entering_housing_facility` and `Simplify_people_and_perspective` into Slide 3 with live variant toggling and expanded concept gallery in `<SlideEscalationDrawer />`.
 - **90-Second Operating Loop Chapter 1 Video**: Integrated the official `BEAM_Grounds_changes_real_estate_20260924185930.mp4` into Chapter 1 (14 Days vs 18 Months) with per-chapter video URL switching and volume unmuting in `<ExecutiveBriefingModal />`.
 - **Admin Landing Showcase & 90s Loop Manager (`/portal/admin/landing`)**: Built comprehensive admin workspace (`LandingShowcaseManager.tsx`) allowing admins to add/upload slide backgrounds, set primary artwork, edit 90s operating loop narration, and upload/replace chapter videos, persisting directly to Firestore `landingConfig/showcase` with live client reactivity via `useLandingConfig`.
-- **Firestore Rules**: Added rule for `match /landingConfig/{docId}` (publicly readable, admin writable).
+- **90-Second Operating Loop Chapter 2 Video**: Wired official video asset (`Acquiring_tax-delinquent_municip...20260924191310.mp4`) into Chapter 2 (02. The Method: Nominal Deeds & Pre-Law).
+- **Mobile Touch Gesture Enhancements**: Implemented multi-axis touch tracking in `LandingShowcase.tsx` (`touchStartX`/`touchStartY`), requiring horizontal dominance before slide transitions, and applied `touch-pan-y overscroll-x-none` to prevent browser history navigation hijacking.
+- **Admin Auth & Exit Navigation**: Added exit controls and sign-out buttons in `app/portal/admin/page.tsx`, `LandingShowcaseManager.tsx`, and `AppHeader.tsx`, exporting `signOutUser()` from `lib/firebase.ts`.
 
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*

@@ -55,6 +55,8 @@ export const defaultOperatingLoopChapters: OperatingLoopChapter[] = [
     time: '0:20',
     title: '02. The Method: Nominal Deeds & Pre-Law',
     text: 'We use nominal title transfers, abandonment clauses, and standardized pre-law memos to step into tax-delinquent properties instantly, turning closed liabilities back into active civic assets.',
+    videoUrl:
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2F90sec%2FAcquiring_tax-delinquent_municip%E2%80%A6_20260924191310.mp4?alt=media&token=6d1bd48e-476c-48bb-8d41-f64d1e5ae94c',
   },
   {
     id: 'ch-3',

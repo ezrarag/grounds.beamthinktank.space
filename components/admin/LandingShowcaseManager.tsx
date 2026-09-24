@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
   UploadCloud,
@@ -13,10 +15,13 @@ import {
   Play,
   Save,
   Loader2,
+  ArrowLeft,
+  Home,
+  LogOut,
 } from 'lucide-react'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '@/lib/firebase'
+import { db, storage, signOutUser } from '@/lib/firebase'
 import {
   landingSlides,
   defaultOperatingLoopChapters,
@@ -33,6 +38,19 @@ export function LandingShowcaseManager() {
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const router = useRouter()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    try {
+      await signOutUser()
+      router.push('/login')
+    } catch {
+      setIsSigningOut(false)
+    }
+  }
 
   // New image URL input buffer per slide
   const [newImageUrls, setNewImageUrls] = useState<Record<string, string>>({})
@@ -227,6 +245,36 @@ export function LandingShowcaseManager() {
 
   return (
     <div className="space-y-6">
+      {/* Top Exit Navigation Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+        <Link
+          href="/portal/admin"
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Admin Console
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <Home className="h-3.5 w-3.5" />
+            Public Home
+          </Link>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3.5 py-1.5 font-mono text-xs text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50"
+          >
+            {isSigningOut ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+            Sign Out
+          </button>
+        </div>
+      </div>
+
       {/* Top Banner & Save Action */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#0e1f1a] p-5">
         <div>

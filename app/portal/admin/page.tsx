@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowUpRight,
   Building2,
@@ -13,8 +15,13 @@ import {
   Sparkles,
   Users,
   Zap,
+  LogOut,
+  LogIn,
+  Home,
+  Loader2,
 } from 'lucide-react'
 import { useIsAdmin } from '@/lib/useIsAdmin'
+import { signOutUser } from '@/lib/firebase'
 
 const CARDS = [
   {
@@ -29,6 +36,12 @@ const CARDS = [
     icon: Zap,
     title: 'Participant & Property Dispatch Console',
     body: 'Live Mapbox proximity dispatch, Cohort Manager command center, and property maturation.',
+  },
+  {
+    href: '/portal/admin/landing',
+    icon: ImageIcon,
+    title: 'Landing Showcase & 90s Loop',
+    body: 'Upload and modify background artwork for the 3 landing slides, and configure videos for the 90-second executive briefing.',
   },
   {
     href: '/portal/admin/add',
@@ -49,12 +62,6 @@ const CARDS = [
     body: 'Register a new city/state with its open-data source so you can add sites there.',
   },
   {
-    href: '/portal/admin/landing',
-    icon: ImageIcon,
-    title: 'Landing Showcase & 90s Loop',
-    body: 'Upload and modify background artwork for the 3 landing slides, and configure videos for the 90-second executive briefing.',
-  },
-  {
     href: '/portal/admin/pathways',
     icon: ImageIcon,
     title: 'Pathway card media',
@@ -69,23 +76,107 @@ const CARDS = [
 ]
 
 export default function AdminHomePage() {
-  const { isAdmin, ready } = useIsAdmin()
+  const { isAdmin, ready, email } = useIsAdmin()
+  const router = useRouter()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    try {
+      await signOutUser()
+      router.push('/login')
+    } catch (err) {
+      console.error('Sign out error:', err)
+      setIsSigningOut(false)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-10">
-      <header className="flex items-center gap-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
-          <ShieldCheck className="h-5 w-5" />
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="eyebrow">Admin Console</p>
+            <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">What do you want to do?</h1>
+            {email ? (
+              <p className="mt-1 text-xs text-white/50 font-mono">
+                Signed in as: <span className="text-white/80">{email}</span>
+              </p>
+            ) : null}
+          </div>
         </div>
-        <div>
-          <p className="eyebrow">Admin Console</p>
-          <h1 className="mt-1 text-3xl font-semibold text-white sm:text-4xl">What do you want to do?</h1>
+
+        {/* Global Exit & Auth Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <Home className="h-3.5 w-3.5" />
+            Public Home
+          </Link>
+
+          <Link
+            href="/login?next=/portal/admin"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            Switch Account
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3.5 py-1.5 font-mono text-xs text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50"
+          >
+            {isSigningOut ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+            Sign Out
+          </button>
         </div>
       </header>
 
-      {!ready ? null : !isAdmin ? (
-        <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-white/60">
-          This area is for BEAM Grounds admins. Sign in with an authorized admin account to manage properties and participant dispatch.
+      {!ready ? (
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-white/60">
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-emerald-400" />
+          <p className="mt-2 font-mono text-xs">Verifying authorization...</p>
+        </div>
+      ) : !isAdmin ? (
+        <div className="mt-8 rounded-[1.5rem] border border-amber-500/30 bg-amber-500/10 p-6 sm:p-8 text-sm text-white/80 space-y-4">
+          <div className="flex items-center gap-3 text-amber-300">
+            <ShieldCheck className="h-6 w-6" />
+            <h2 className="text-lg font-semibold">Admin Account Required</h2>
+          </div>
+          <p className="leading-relaxed text-white/70 max-w-2xl">
+            You are currently signed in as <span className="font-mono text-white">{email || 'unauthorized'}</span>, which does not have administrative permissions for BEAM Grounds.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Link
+              href="/login?next=/portal/admin"
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-xs font-semibold text-[#07100c] hover:bg-emerald-300 transition"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign In with Authorized Admin Account
+            </Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-xs font-mono text-white hover:bg-white/15 transition"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-xs font-mono text-white hover:bg-white/15 transition"
+            >
+              <Home className="h-4 w-4" />
+              Return to Public Site
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2">

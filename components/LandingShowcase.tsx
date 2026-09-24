@@ -28,6 +28,7 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
   const [isAgendaOpen, setIsAgendaOpen] = useState(false)
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({})
   const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
 
   const count = slides.length
   const slide = slides[index] ?? slides[0]
@@ -63,14 +64,28 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
 
   function handleTouchStart(event: TouchEvent<HTMLElement>) {
     touchStartX.current = event.touches[0]?.clientX ?? null
+    touchStartY.current = event.touches[0]?.clientY ?? null
   }
 
   function handleTouchEnd(event: TouchEvent<HTMLElement>) {
-    if (touchStartX.current === null) return
-    const delta = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current
-    if (delta > SWIPE_THRESHOLD) go(-1)
-    else if (delta < -SWIPE_THRESHOLD) go(1)
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX.current
+    const endY = event.changedTouches[0]?.clientY ?? touchStartY.current
+    const deltaX = endX - touchStartX.current
+    const deltaY = endY - touchStartY.current
+
+    // Only trigger horizontal slide transition if horizontal gesture is dominant
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      if (deltaX < 0) {
+        // Swiping left -> next slide (01 -> 02 -> 03)
+        go(1)
+      } else {
+        // Swiping right -> previous slide (03 -> 02 -> 01)
+        go(-1)
+      }
+    }
     touchStartX.current = null
+    touchStartY.current = null
   }
 
   const groundsLinks = [
@@ -105,7 +120,7 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
       <section
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="relative h-[100dvh] w-full overflow-hidden bg-[#07100c] select-none"
+        className="relative h-[100dvh] w-full overflow-hidden bg-[#07100c] select-none touch-pan-y overscroll-x-none"
       >
         {/* Ambient Gradient Background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,#1c382e_0%,#0e1f1a_45%,#07100c_100%)]" />
