@@ -49,9 +49,9 @@ async function writeMembership(user: User, role: string, pathwayRole: string | n
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = searchParams.get('next')
-  const pathwayRole = searchParams.get('role')
-  const chapter = searchParams.get('chapter')
+  const next = searchParams?.get('next') ?? null
+  const pathwayRole = searchParams?.get('role') ?? null
+  const chapter = searchParams?.get('chapter') ?? null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'sign-in' | 'create'>('sign-in')

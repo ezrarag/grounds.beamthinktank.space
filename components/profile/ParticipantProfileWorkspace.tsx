@@ -170,6 +170,21 @@ export function ParticipantProfileWorkspace() {
   const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<typeof CITY_NODE_DICTIONARY>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
+  // Geolocation & Civic API state (declared before useEffect hooks)
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [geoLocating, setGeoLocating] = useState(false)
+  const [geoError, setGeoError] = useState<string | null>(null)
+  const [civicSyncing, setCivicSyncing] = useState(false)
+  const [civicDataCount, setCivicDataCount] = useState<number | null>(null)
+  const [civicSourceLabel, setCivicSourceLabel] = useState<string | null>(null)
+
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [matcherOpen, setMatcherOpen] = useState(false)
+  const [matcherCity, setMatcherCity] = useState<string | null>(null)
+  const [workModalOpen, setWorkModalOpen] = useState(false)
+  const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
+  const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
+
   // Deep-Link URL Resolver: Auto-open Parcel Intelligence Modal if taxkey, address, or lat/lng URL params exist
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -192,23 +207,6 @@ export function ParticipantProfileWorkspace() {
       }
     }
   }, [])
-
-  // Geolocation state
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
-  const [geoLocating, setGeoLocating] = useState(false)
-  const [geoError, setGeoError] = useState<string | null>(null)
-
-  // Civic API query state
-  const [civicSyncing, setCivicSyncing] = useState(false)
-  const [civicDataCount, setCivicDataCount] = useState<number | null>(null)
-  const [civicSourceLabel, setCivicSourceLabel] = useState<string | null>(null)
-
-  const [editProfileOpen, setEditProfileOpen] = useState(false)
-  const [matcherOpen, setMatcherOpen] = useState(false)
-  const [matcherCity, setMatcherCity] = useState<string | null>(null)
-  const [workModalOpen, setWorkModalOpen] = useState(false)
-  const [workModalTarget, setWorkModalTarget] = useState<PropertySiteOption | null>(null)
-  const [interestTargetAsset, setInterestTargetAsset] = useState<BeamAsset | null>(null)
 
   function requestUserLocation() {
     if (typeof window === 'undefined' || !navigator.geolocation) {

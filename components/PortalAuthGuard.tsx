@@ -5,6 +5,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 
+function buildNextQueryParam(pathname: string, searchParams: ReturnType<typeof useSearchParams>): string {
+  const queryStr = searchParams?.toString() ?? ''
+  return `${pathname}${queryStr ? `?${queryStr}` : ''}`
+}
+
 export function PortalAuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -12,8 +17,9 @@ export function PortalAuthGuard({ children }: { children: ReactNode }) {
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
+    const next = buildNextQueryParam(pathname, searchParams)
+
     if (!auth) {
-      const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
       router.replace(`/login?next=${encodeURIComponent(next)}`)
       return
     }
@@ -26,11 +32,9 @@ export function PortalAuthGuard({ children }: { children: ReactNode }) {
           return
         }
 
-        const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
         router.replace(`/login?next=${encodeURIComponent(next)}`)
       },
       () => {
-        const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
         router.replace(`/login?next=${encodeURIComponent(next)}`)
       },
     )
