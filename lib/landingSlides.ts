@@ -77,9 +77,8 @@ export const landingSlides: LandingSlide[] = [
     id: 'capital-engine',
     stepNumber: '01',
     eyebrow: 'Capital & Revenue Engine',
-    shortTitle: 'How Grounds Generates Wealth',
-    shortSummary:
-      'We replace 18-month speculative debt with 14-day nominal acquisitions and convert community labor into bankable capital.',
+    shortTitle: 'Capital',
+    shortSummary: 'Replacing debt with nominal acquisitions and community equity.',
     fullHeadline: '14-Day Title Control Meets Labor-Backed Capital Stacks',
     fullNarrative:
       'Traditional developers borrow millions at high interest rates and spend two years in bureaucracy. BEAM Grounds utilizes statutory abandonment clauses, nominal municipal transfers, and standardized pre-law memos to assume title control in 14 days. We then partner with BEAM Federal Credit Union (BFCU) to convert rehearsal hours and sweat-equity labor into hard rehabilitation collateral.',
@@ -138,10 +137,9 @@ export const landingSlides: LandingSlide[] = [
   {
     id: 'stakeholder-briefing',
     stepNumber: '02',
-    eyebrow: 'Leadership & Weekly Deal Room',
-    shortTitle: 'What Stakeholders Meet to Decide',
-    shortSummary:
-      'A 90-second executive briefing loop and direct line for Denail, DeTania, Rick, and Ezra to shape this week’s agenda.',
+    eyebrow: 'Labor & Site Operations',
+    shortTitle: 'Labor',
+    shortSummary: 'Mobilizing local crews to execute on-site work directly.',
     fullHeadline: 'The Weekly Decision Engine for BEAM Leadership',
     fullNarrative:
       'Every week, leadership convenes to approve property pipeline clearances, capital allocations, and cohort staffing. Instead of passive reports, stakeholders review 90-second decision briefings and submit specific queries or agenda items directly into the weekly queue.',
@@ -198,10 +196,9 @@ export const landingSlides: LandingSlide[] = [
   {
     id: 'community-shield',
     stepNumber: '03',
-    eyebrow: 'Civic Permanence & Housing',
-    shortTitle: 'The Community & Participant Shield',
-    shortSummary:
-      'Packers-style Community Land Trust ownership ensures no one can flip the neighborhood, while residents live free or cost-based.',
+    eyebrow: 'Commons & Community Returns',
+    shortTitle: 'Equity',
+    shortSummary: 'Returning long-term parcel appreciation directly to the neighborhood.',
     fullHeadline: 'Permanent Community Land Trust & Sweat-Equity Housing',
     fullNarrative:
       'Neighborhoods are frequently revitalized only for original residents to be priced out. BEAM Grounds legally severs land ownership from building improvements: the land is held in perpetuity by a community land trust governed like the Green Bay Packers. Meanwhile, participants in our trade, acoustics, and engineering cohorts convert their sweat equity into home equity and tiered housing with zero credit score discrimination.',
