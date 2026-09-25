@@ -70,6 +70,7 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
 - **Embedded Landing Media & 90s Loop as 5th Operational Tab**: Added Tab 5 directly inside `ExecutiveOperationsConsole` (`/portal/acquisition`) and wired the header button to switch tabs without navigating away.
 - **Cleaned `/portal/admin/landing`**: Removed `PortalShell` wrapper, sidebar `MemberDashboard`, and redundant banners so only the clean executive workspace is rendered.
 - **Firebase Storage Rules & Unauthorized Error Handling**: Created `storage.rules` granting public read on `landing-media/**` and write access to authenticated users, added `storage` to `firebase.json`, and added clear UI error messaging advising on admin auth and direct URL fallback.
+- **90-Second Operating Loop Complete Video Suite**: Integrated official video assets for Chapter 3 (`Crews_renovating_building_for_ca…_20260924194914.mp4`) and Chapter 4 (`Community_land_trust_membership_UI_20260924200304.mp4`) into `lib/landingSlides.ts`. All 4 chapters now have permanent Firebase Storage video assets assigned.
 
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*

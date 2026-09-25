@@ -63,12 +63,16 @@ export const defaultOperatingLoopChapters: OperatingLoopChapter[] = [
     time: '0:45',
     title: '03. The Engine: BFCU Labor Collateral',
     text: 'Local trade and music cohorts fix the space to earn accredited sweat-equity tokens, sheltered under our non-profit umbrella and backed by BEAM Federal Credit Union for rehab capital.',
+    videoUrl:
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2F90sec%2FCrews_renovating_building_for_ca%E2%80%A6_20260924194914.mp4?alt=media&token=4742b0b6-ebfa-4b5c-a61d-d9d91e19b333',
   },
   {
     id: 'ch-4',
     time: '1:10',
     title: '04. The Shield: 99-Year Community Trust',
     text: 'Underlying land is deeded to a permanent Community Land Trust so no one can flip the neighborhood. Participants live free or cost-based with zero credit score gatekeeping.',
+    videoUrl:
+      'https://firebasestorage.googleapis.com/v0/b/beam-home.firebasestorage.app/o/Home%20Landing%2F90sec%2FCommunity_land_trust_membership_UI_20260924200304.mp4?alt=media&token=3da3b90e-3f9c-464b-9a83-8abcd52148b5',
   },
 ]
 
