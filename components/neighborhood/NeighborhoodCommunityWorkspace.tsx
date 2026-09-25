@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import dynamic from 'next/dynamic'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   MapPin,
@@ -23,26 +24,20 @@ import {
   Hammer,
   Wrench,
   Music,
+  ArrowUpRight,
+  Home,
+  LogIn,
+  LogOut,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
-import { db, sanitizeForFirestore } from '@/lib/firebase'
+import { db, auth, sanitizeForFirestore, signOutUser } from '@/lib/firebase'
 import { parseExifLocation } from '@/lib/exif'
 import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
 import { ParcelErrorBoundary } from '@/components/ParcelErrorBoundary'
-
-const InteractivePinMapCanvas = dynamic(
-  () => import('@/components/profile/InteractivePinMapCanvas').then((mod) => mod.InteractivePinMapCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[440px] w-full rounded-3xl bg-slate-900 animate-pulse border border-slate-800 flex items-center justify-center text-xs font-mono text-slate-400">
-        Loading Neighborhood Pin Map Canvas...
-      </div>
-    ),
-  }
-)
 
 export interface NeighborhoodRole {
   id: string
@@ -136,8 +131,13 @@ export const STRUCTURAL_BUSINESS_ELEMENTS: BusinessPlanStructuralElement[] = [
   },
 ]
 
+export type NeighborhoodTab = 'search' | 'roles' | 'branches'
+
 export function NeighborhoodCommunityWorkspace() {
   const { user } = usePortalAccessState()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState<NeighborhoodTab>('search')
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   // Map & Parcel Search state
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 43.0396, lng: -87.945 })
@@ -145,6 +145,7 @@ export function NeighborhoodCommunityWorkspace() {
   const [searching, setSearching] = useState(false)
   const [searchedParcel, setSearchedParcel] = useState<ParcelResult | null>(null)
   const [searchNotice, setSearchNotice] = useState<string | null>(null)
+  const [parcelModalOpen, setParcelModalOpen] = useState(false)
 
   // Photo EXIF parsing state
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -168,6 +169,18 @@ export function NeighborhoodCommunityWorkspace() {
   const [submittingBranch, setSubmittingBranch] = useState(false)
   const [branchNotice, setBranchNotice] = useState<string | null>(null)
 
+  // Handle Logout
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    try {
+      await signOutUser()
+      router.push('/login')
+    } catch (err) {
+      console.error('Sign out error:', err)
+      setIsSigningOut(false)
+    }
+  }
+
   // 1. Parcel Search Handler
   async function handleExecuteSearch(overrideQuery?: string, coords?: { lat: number; lng: number }) {
     setSearching(true)
@@ -187,6 +200,7 @@ export function NeighborhoodCommunityWorkspace() {
       if (res.ok) {
         const data = (await res.json()) as ParcelResult
         setSearchedParcel(data)
+        setParcelModalOpen(true)
         if (data.lat && data.lng) {
           setMapCenter({ lat: data.lat, lng: data.lng })
         }
@@ -330,7 +344,7 @@ export function NeighborhoodCommunityWorkspace() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-10 space-y-8">
       {/* Hidden File Inputs for Camera & Gallery */}
       <input
         ref={cameraRef}
@@ -348,308 +362,447 @@ export function NeighborhoodCommunityWorkspace() {
         className="hidden"
       />
 
-      {/* Hero Header */}
-      <div className="rounded-3xl border border-slate-800 bg-[#091510] text-white p-6 sm:p-8 space-y-4 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              <Compass className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Neighborhood Community Workspace
-              </h1>
-              <p className="text-xs text-slate-400 font-mono">
-                Civic Parcel Intelligence • Role Nominations • Git-Style Business Plan Branching
-              </p>
-            </div>
+      {/* HEADER SECTION (Organized like Admin Console) */}
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
+            <Compass className="h-5 w-5" />
           </div>
-          <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1 text-xs font-mono font-bold text-emerald-300">
-            Non-Monetary Community Portal
-          </span>
-        </div>
-        <p className="text-sm text-slate-300 leading-relaxed max-w-3xl">
-          Search local properties, drop interactive map pins, upload geotagged site photos, nominate community members for key revitalization positions, and branch structural site business plans — without money collection.
-        </p>
-      </div>
-
-      {/* SECTION 1: Address Search, Interactive Map Canvas & Photo EXIF Uploader */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-slate-800" />
-            <h2 className="text-lg font-bold text-[#0f172a]">
-              Local Parcel Search &amp; Interactive Map Visualizer
-            </h2>
+          <div>
+            <p className="eyebrow text-xs uppercase font-mono text-[#88aa8f]">Neighborhood Community Console</p>
+            <h1 className="mt-0.5 text-2xl font-semibold text-white sm:text-3xl">Community Revitalization &amp; Sourcing</h1>
+            <p className="mt-1 text-xs text-white/50 font-mono">
+              Signed in as: <span className="text-white/80">{user?.email || user?.displayName || 'Community Neighbor'}</span> (Non-Monetary Portal)
+            </p>
           </div>
-          <span className="text-xs text-slate-500 font-mono">
-            Socrata MPROP &amp; Regrid GIS API Connected
-          </span>
         </div>
 
-        {/* Search Input Bar */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void handleExecuteSearch()
-          }}
-          className="flex flex-col sm:flex-row gap-3"
+        {/* Global Exit & Auth Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <Home className="h-3.5 w-3.5" />
+            Public Home
+          </Link>
+
+          <Link
+            href="/login?next=/portal/neighborhood"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            Switch Account
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3.5 py-1.5 font-mono text-xs text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50"
+          >
+            {isSigningOut ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      {/* CATEGORY CARDS GRID (Matching Admin Console CARDS Architecture) */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <button
+          onClick={() => setActiveTab('search')}
+          type="button"
+          className={`text-left flex flex-col rounded-[1.5rem] border p-6 transition ${
+            activeTab === 'search'
+              ? 'border-emerald-400/50 bg-emerald-500/10 shadow-lg'
+              : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
+          }`}
         >
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search property address or TaxKey (e.g. 639 N 25th St, Milwaukee, WI)..."
-              className="w-full rounded-2xl border border-slate-300 bg-slate-50 pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-slate-800 focus:bg-white focus:outline-none"
-            />
+          <div className="flex items-center justify-between">
+            <Search className="h-6 w-6 text-emerald-400" />
+            <ArrowUpRight className="h-4 w-4 text-white/40" />
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={searching}
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#1e293b] px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-900 transition shadow-sm disabled:opacity-50"
-            >
-              <Search className="h-4 w-4 text-emerald-400" />
-              <span>{searching ? 'Searching...' : 'Search Parcel'}</span>
-            </button>
-
-            <button
-              onClick={() => cameraRef.current?.click()}
-              disabled={photoParsing}
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-sm"
-              title="Take real-time photo on mobile with embedded EXIF GPS tags"
-            >
-              <Camera className="h-4 w-4 text-amber-700" />
-              <span>{photoParsing ? 'Parsing EXIF...' : 'Take Photo'}</span>
-            </button>
-
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={photoParsing}
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-2.5 text-xs font-bold text-sky-900 hover:bg-sky-100 transition shadow-sm"
-              title="Upload existing property photo from device gallery"
-            >
-              <UploadCloud className="h-4 w-4 text-sky-700" />
-              <span>Upload Photo</span>
-            </button>
-          </div>
-        </form>
-
-        {searchNotice && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-            {searchNotice}
+          <h2 className="mt-4 text-base font-semibold text-white">1. Parcel Search &amp; EXIF Intake</h2>
+          <p className="mt-1.5 text-xs leading-6 text-white/60">
+            Query municipal Socrata tax keys, street addresses, or upload site camera EXIF geotags.
           </p>
-        )}
+        </button>
 
-        {photoPreview && (
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-            <img src={photoPreview} alt="Uploaded site preview" className="h-12 w-12 rounded-xl object-cover border" />
-            <div className="text-xs font-mono text-slate-700 space-y-0.5">
-              <span className="font-bold text-emerald-800 block">📸 Geotagged Site Photo Loaded</span>
-              <span className="text-[11px] text-slate-500">Coordinates centered on map canvas below.</span>
-            </div>
+        <button
+          onClick={() => setActiveTab('roles')}
+          type="button"
+          className={`text-left flex flex-col rounded-[1.5rem] border p-6 transition ${
+            activeTab === 'roles'
+              ? 'border-amber-400/50 bg-amber-500/10 shadow-lg'
+              : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <HardHat className="h-6 w-6 text-amber-400" />
+            <ArrowUpRight className="h-4 w-4 text-white/40" />
           </div>
-        )}
+          <h2 className="mt-4 text-base font-semibold text-white">2. Community Role Roster</h2>
+          <p className="mt-1.5 text-xs leading-6 text-white/60">
+            Browse 6 revitalization positions and nominate qualified community neighbors or yourself.
+          </p>
+        </button>
 
-        {/* Dynamic Interactive Pin Map Canvas */}
-        <InteractivePinMapCanvas
-          center={mapCenter}
-          onCoordsChange={(coords) => {
-            setMapCenter(coords)
-          }}
-          onInspectParcel={(coords) => {
-            void handleExecuteSearch(undefined, coords)
-          }}
-          fullBleedMobile={false}
-        />
+        <button
+          onClick={() => setActiveTab('branches')}
+          type="button"
+          className={`text-left flex flex-col rounded-[1.5rem] border p-6 transition ${
+            activeTab === 'branches'
+              ? 'border-purple-400/50 bg-purple-500/10 shadow-lg'
+              : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <GitBranch className="h-6 w-6 text-purple-400" />
+            <ArrowUpRight className="h-4 w-4 text-white/40" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold text-white">3. Business Plan Branching</h2>
+          <p className="mt-1.5 text-xs leading-6 text-white/60">
+            Propose Git-style structural branches &amp; pro-forma edits for 99-year land trust ground leases.
+          </p>
+        </button>
       </div>
 
-      {/* SECTION 2: Neighborhood Community Role Roster & Nominations */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <HardHat className="h-5 w-5 text-slate-800" />
-              <h2 className="text-lg font-bold text-[#0f172a]">
-                Neighborhood Community Role Roster &amp; Recommendations
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500">
-              Browse positions and nominate qualified community neighbors or recommend yourself for revitalization leads.
-            </p>
-          </div>
-          <span className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 font-mono text-xs font-bold text-slate-700">
-            {NEIGHBORHOOD_ROLES.length} Open Positions
-          </span>
-        </div>
+      {/* ISOLATED ACTIVE WORKSPACE PANELS */}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {NEIGHBORHOOD_ROLES.map((role) => {
-            const Icon = role.icon
-            return (
-              <div
-                key={role.id}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-slate-300 hover:bg-slate-100/80 shadow-sm"
+      {/* TAB 1: PARCEL SEARCH & CIVIC INTAKE (ISOLATED MAP OPTIONS) */}
+      {activeTab === 'search' && (
+        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 space-y-6 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Search className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Municipal Parcel Search &amp; Site Geotags
+                </h2>
+                <p className="text-xs text-white/50 font-mono">
+                  Socrata MPROP &amp; Regrid Civic API Connected • Isolated Map Viewers
+                </p>
+              </div>
+            </div>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 font-mono text-xs text-emerald-300">
+              Civic API Connected
+            </span>
+          </div>
+
+          {/* Search Input Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              void handleExecuteSearch()
+            }}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-white/40" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search address or TaxKey (e.g. 639 N 25th St, Milwaukee, WI)..."
+                className="w-full rounded-full border border-white/15 bg-[#102119] pl-10 pr-4 py-3 text-xs text-white placeholder:text-white/40 focus:border-emerald-400 focus:outline-none shadow-inner"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={searching}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-xs font-bold text-black hover:bg-emerald-300 transition shadow-md disabled:opacity-50"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider ${role.badgeColor}`}>
-                      {role.category}
-                    </span>
-                    <Icon className="h-5 w-5 text-slate-700" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[#0f172a]">{role.title}</h3>
-                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">{role.description}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200">
-                  <button
-                    onClick={() => setSelectedRole(role)}
-                    type="button"
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1e293b] py-2 text-xs font-semibold text-white hover:bg-slate-900 transition shadow-sm"
-                  >
-                    <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Nominate Candidate</span>
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* SECTION 3: Git-Style Business Plan Branching & Structural Feedback Engine */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <GitBranch className="h-5 w-5 text-slate-800" />
-              <h2 className="text-lg font-bold text-[#0f172a]">
-                Git-Style Business Plan Branching &amp; Structural Feedback
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500">
-              View video &amp; slide structural elements and propose branched business plan modifications for local sites.
-            </p>
-          </div>
-          <span className="rounded-full bg-slate-900 text-emerald-400 px-3 py-1 font-mono text-xs font-bold border border-slate-700">
-            Git-Style Proposals
-          </span>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {STRUCTURAL_BUSINESS_ELEMENTS.map((element) => (
-            <div
-              key={element.id}
-              className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4 shadow-sm"
-            >
-              <div className="space-y-2">
-                <span className="rounded-full bg-slate-200 text-slate-800 px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider">
-                  {element.category}
-                </span>
-                <h3 className="text-sm font-bold text-[#0f172a]">{element.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">{element.currentSummary}</p>
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[11px] font-mono text-amber-900">
-                  💡 {element.videoSlideNote}
-                </div>
-              </div>
+                <Search className="h-4 w-4" />
+                <span>{searching ? 'Querying...' : 'Search Parcel'}</span>
+              </button>
 
               <button
-                onClick={() => setSelectedElement(element)}
+                onClick={() => cameraRef.current?.click()}
+                disabled={photoParsing}
                 type="button"
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2 text-xs font-semibold text-emerald-400 hover:bg-black transition shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition shadow-sm"
+                title="Take photo on mobile device with EXIF GPS location"
               >
-                <GitBranch className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Branch Business Plan Proposal</span>
+                <Camera className="h-4 w-4 text-amber-400" />
+                <span>{photoParsing ? 'Parsing...' : 'Camera EXIF'}</span>
+              </button>
+
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={photoParsing}
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/40 bg-sky-500/10 px-4 py-3 text-xs font-bold text-sky-300 hover:bg-sky-500/20 transition shadow-sm"
+                title="Upload image file from device gallery"
+              >
+                <UploadCloud className="h-4 w-4 text-sky-400" />
+                <span>Upload Photo</span>
               </button>
             </div>
-          ))}
-        </div>
-      </div>
+          </form>
 
-      {/* MODAL 1: Community Role Nomination Form */}
+          {searchNotice && (
+            <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 p-3 rounded-2xl">
+              {searchNotice}
+            </p>
+          )}
+
+          {photoPreview && (
+            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
+              <img src={photoPreview} alt="Uploaded site preview" className="h-12 w-12 rounded-xl object-cover border border-white/20" />
+              <div className="text-xs font-mono text-white/80 space-y-0.5">
+                <span className="font-bold text-emerald-400 block">📸 Geotagged Site Photo Loaded</span>
+                <span className="text-[11px] text-white/50">
+                  Extracted Coordinates: {mapCenter.lat.toFixed(4)}° N, {mapCenter.lng.toFixed(4)}° W
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ISOLATED MAP & INSPECTION OPTIONS (Clean fallback card replacing heavy embedded canvas) */}
+          <div className="rounded-2xl border border-white/10 bg-[#091510] p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-amber-400" />
+                <span className="font-mono text-xs font-bold text-white">
+                  Active Coordinates: {mapCenter.lat.toFixed(4)}° N, {mapCenter.lng.toFixed(4)}° W
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                Isolated Map Trigger
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => {
+                  if (searchedParcel) {
+                    setParcelModalOpen(true)
+                  } else {
+                    void handleExecuteSearch()
+                  }
+                }}
+                type="button"
+                className="flex items-center justify-between rounded-xl border border-emerald-400/40 bg-emerald-500/10 p-3.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
+                  <span>⚡ Inspect Full Parcel Intelligence Modal</span>
+                </div>
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+
+              <a
+                href={`https://maps.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}&z=17`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-xl border border-amber-400/40 bg-amber-500/10 p-3.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4 text-amber-400" />
+                  <span>🌐 Open in Google / Apple Maps</span>
+                </div>
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </div>
+
+            <p className="text-center font-mono text-[11px] text-white/50">
+              💡 <strong>Tip:</strong> Enter an address above or upload a photo to auto-inspect zoning, assessed values, tax liens, and HUD labor credits.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: NEIGHBORHOOD ROLE ROSTER & RECOMMENDATIONS */}
+      {activeTab === 'roles' && (
+        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 space-y-6 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <HardHat className="h-5 w-5 text-amber-400" />
+                <h2 className="text-lg font-semibold text-white">
+                  Neighborhood Community Role Roster &amp; Recommendations
+                </h2>
+              </div>
+              <p className="text-xs text-white/60 mt-1">
+                Browse positions and nominate qualified community neighbors or recommend yourself for revitalization leads.
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-400/10 border border-amber-400/30 px-3.5 py-1 font-mono text-xs font-bold text-amber-300">
+              {NEIGHBORHOOD_ROLES.length} Open Positions
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {NEIGHBORHOOD_ROLES.map((role) => {
+              const Icon = role.icon
+              return (
+                <div
+                  key={role.id}
+                  className="flex flex-col justify-between rounded-2xl border border-white/10 bg-[#102119]/80 p-5 transition hover:border-amber-400/40 hover:bg-[#152a20] shadow-md"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                        <Icon className="h-4.5 w-4.5" />
+                      </div>
+                      <span className="font-mono text-[10px] text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/30">
+                        {role.category}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white leading-tight">{role.title}</h3>
+                    <p className="text-xs text-white/65 leading-relaxed">{role.description}</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedRole(role)
+                      setNominationNotice(null)
+                    }}
+                    type="button"
+                    className="mt-4 w-full rounded-full bg-amber-400 px-4 py-2 font-mono text-xs font-bold text-black hover:bg-amber-300 transition shadow-md"
+                  >
+                    Nominate or Recommend Candidate →
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: STRUCTURAL BUSINESS PLAN BRANCHING */}
+      {activeTab === 'branches' && (
+        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-6 space-y-6 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-purple-400" />
+                <h2 className="text-lg font-semibold text-white">
+                  Git-Style Structural Business Plan Branching
+                </h2>
+              </div>
+              <p className="text-xs text-white/60 mt-1">
+                Propose non-monetary adjustments to structural site elements, 99-year ground lease deeds, and sweat-equity pro-formas.
+              </p>
+            </div>
+            <span className="rounded-full bg-purple-400/10 border border-purple-400/30 px-3.5 py-1 font-mono text-xs font-bold text-purple-300">
+              Open Proposal Stage
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {STRUCTURAL_BUSINESS_ELEMENTS.map((element) => (
+              <div
+                key={element.id}
+                className="flex flex-col justify-between rounded-2xl border border-white/10 bg-[#102119]/80 p-5 space-y-4 hover:border-purple-400/40 transition"
+              >
+                <div className="space-y-2">
+                  <span className="font-mono text-[10px] text-purple-300 bg-purple-400/10 px-2 py-0.5 rounded-md border border-purple-400/30 inline-block">
+                    {element.category}
+                  </span>
+                  <h3 className="text-sm font-bold text-white">{element.title}</h3>
+                  <p className="text-xs text-white/65 leading-relaxed">{element.currentSummary}</p>
+                  <p className="text-[11px] text-amber-300/80 font-mono bg-amber-400/5 p-2 rounded-xl border border-amber-400/20">
+                    💡 {element.videoSlideNote}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSelectedElement(element)
+                    setBranchName(`branch/${element.id}-proposal`)
+                    setBranchNotice(null)
+                  }}
+                  type="button"
+                  className="w-full rounded-full border border-purple-400/50 bg-purple-500/10 px-4 py-2 font-mono text-xs font-bold text-purple-300 hover:bg-purple-500/20 transition"
+                >
+                  🌿 Branch This Business Plan Element →
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: COMMUNITY ROLE NOMINATION MODAL */}
       {selectedRole && (
-        <div className="fixed inset-0 z-50 bg-black/80 p-4 backdrop-blur-md flex items-center justify-center">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                <UserCheck className="h-5 w-5 text-emerald-600" />
-                <span>Nominate Candidate for {selectedRole.title}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-[#091510] p-6 space-y-5 shadow-2xl text-left">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <HardHat className="h-5 w-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">Nominate Candidate: {selectedRole.title}</h3>
               </div>
               <button
                 onClick={() => setSelectedRole(null)}
-                type="button"
-                className="rounded-full p-2 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                className="rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {nominationNotice && (
-              <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-center font-bold">
-                {nominationNotice}
-              </p>
-            )}
-
-            <form onSubmit={handleSubmitNomination} className="space-y-4 text-xs font-mono">
+            <form onSubmit={handleSubmitNomination} className="space-y-4">
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Candidate Name / Self-Recommendation</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Candidate / Nominee Name</label>
                 <input
                   type="text"
                   required
                   value={nomineeName}
                   onChange={(e) => setNomineeName(e.target.value)}
-                  placeholder="Full Candidate Name (e.g. Marcus Vance)"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-sans"
+                  placeholder="e.g. Marcus Johnson or Self Recommendation"
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-amber-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Candidate Contact (Email or Phone)</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Contact Info / Handle</label>
                 <input
                   type="text"
                   required
                   value={nomineeContact}
                   onChange={(e) => setNomineeContact(e.target.value)}
-                  placeholder="email@example.com or (414) 555-0199"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-sans"
+                  placeholder="e.g. marcus@community.org or phone/handle"
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-amber-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Recommendation Notes &amp; Qualifications</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Qualifications &amp; Recommendation Notes</label>
                 <textarea
-                  rows={3}
                   required
+                  rows={3}
                   value={nominationReason}
                   onChange={(e) => setNominationReason(e.target.value)}
-                  placeholder="Explain why this candidate is recommended for this revitalization position..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-sans"
+                  placeholder="Describe experience with local trades, site inspections, or community stewardship..."
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-amber-400 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  onClick={() => setSelectedRole(null)}
-                  type="button"
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
+              {nominationNotice && (
+                <p className="text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 p-3 rounded-2xl">
+                  {nominationNotice}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={submittingNomination}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 shadow-md transition disabled:opacity-50"
+                  className="flex-1 rounded-full bg-amber-400 px-5 py-2.5 text-xs font-bold text-black hover:bg-amber-300 transition shadow-md disabled:opacity-50"
                 >
-                  <Send className="h-3.5 w-3.5" />
-                  <span>{submittingNomination ? 'Submitting...' : 'Submit Candidate Nomination'}</span>
+                  {submittingNomination ? 'Submitting...' : 'Submit Recommendation'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole(null)}
+                  className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10"
+                >
+                  Cancel
                 </button>
               </div>
             </form>
@@ -657,81 +810,79 @@ export function NeighborhoodCommunityWorkspace() {
         </div>
       )}
 
-      {/* MODAL 2: Git-Style Business Plan Branch Proposal Form */}
+      {/* MODAL 2: BUSINESS PLAN BRANCHING PROPOSAL MODAL */}
       {selectedElement && (
-        <div className="fixed inset-0 z-50 bg-black/80 p-4 backdrop-blur-md flex items-center justify-center">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                <GitBranch className="h-5 w-5 text-emerald-600" />
-                <span>Branch Proposal for &quot;{selectedElement.title}&quot;</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-[#091510] p-6 space-y-5 shadow-2xl text-left">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-purple-400" />
+                <h3 className="text-base font-bold text-white">Branch Business Plan: {selectedElement.title}</h3>
               </div>
               <button
                 onClick={() => setSelectedElement(null)}
-                type="button"
-                className="rounded-full p-2 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                className="rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {branchNotice && (
-              <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-center font-bold">
-                {branchNotice}
-              </p>
-            )}
-
-            <form onSubmit={handleSubmitBranch} className="space-y-4 text-xs font-mono">
+            <form onSubmit={handleSubmitBranch} className="space-y-4">
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Branch Identifier / Name</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Git Branch Name</label>
                 <input
                   type="text"
                   required
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
-                  placeholder={`branch/${selectedElement.id}-artisan-hub`}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-mono"
+                  placeholder="e.g. branch/99-yr-lease-tenant-rights"
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-purple-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Proposed Structural Modification / Feedback</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Proposed Structural Change</label>
                 <textarea
-                  rows={3}
                   required
+                  rows={3}
                   value={proposedChange}
                   onChange={(e) => setProposedChange(e.target.value)}
-                  placeholder="Describe your branched business plan adjustment (e.g., expand ground floor timber workshop to include 2 additional soundproof rehearsal booths)..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-sans"
+                  placeholder="Detail your proposed modification to the ground lease, acoustic paneling, or sweat credit rules..."
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-purple-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Pro-Forma / Scope Adjustment (Optional)</label>
+                <label className="block text-xs font-mono font-bold text-white/70">Pro-Forma Adjustment Note (Optional)</label>
                 <input
                   type="text"
                   value={proFormaAdjustment}
                   onChange={(e) => setProFormaAdjustment(e.target.value)}
-                  placeholder="e.g. +$15,000 rehab estimate offset by +40 hrs sweat equity"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-900 focus:border-slate-800 focus:outline-none font-sans"
+                  placeholder="e.g. Increase sweat-equity limit from 72h to 100h per quarter"
+                  className="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-purple-400 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  onClick={() => setSelectedElement(null)}
-                  type="button"
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
+              {branchNotice && (
+                <p className="text-xs text-purple-300 bg-purple-950/60 border border-purple-800/60 p-3 rounded-2xl">
+                  {branchNotice}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={submittingBranch}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-semibold text-emerald-400 hover:bg-black shadow-md transition disabled:opacity-50"
+                  className="flex-1 rounded-full bg-purple-400 px-5 py-2.5 text-xs font-bold text-black hover:bg-purple-300 transition shadow-md disabled:opacity-50"
                 >
-                  <GitBranch className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>{submittingBranch ? 'Branching Proposal...' : 'Create Branched Business Plan Proposal'}</span>
+                  {submittingBranch ? 'Creating Branch...' : 'Submit Branch Proposal'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedElement(null)}
+                  className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10"
+                >
+                  Cancel
                 </button>
               </div>
             </form>
@@ -739,9 +890,9 @@ export function NeighborhoodCommunityWorkspace() {
         </div>
       )}
 
-      {/* Parcel Intelligence Workspace Modal (Triggered by Search/Pin selection) */}
+      {/* PARCEL INTELLIGENCE WORKSPACE MODAL */}
       {searchedParcel && (
-        <ParcelErrorBoundary onClose={() => setSearchedParcel(null)}>
+        <ParcelErrorBoundary fallbackTitle="Parcel Intelligence Workspace">
           <ParcelIntelligenceWorkspaceModal
             parcel={searchedParcel}
             user={user}
