@@ -14,6 +14,9 @@ import {
   RotateCcw,
   Navigation,
   ArrowLeft,
+  Bell,
+  ChevronDown,
+  ArrowUpRight,
 } from 'lucide-react'
 import type { BeamAsset } from '@/lib/useAcquisitionSites'
 
@@ -405,47 +408,65 @@ export function InteractivePinMapCanvas({
 
   return (
     <div className={`relative w-full ${fullBleedMobile ? 'fixed inset-0 h-[100dvh] w-screen z-0 md:relative md:h-auto md:w-full md:z-auto' : 'space-y-4'}`}>
-      {/* Layer 1: Top Floating Controls Island */}
-      <div className="fixed top-4 left-3 right-3 z-20 md:static md:w-full rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#091510]/90 p-3 space-y-2.5 text-left backdrop-blur-md shadow-2xl">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            {onCloseMobileMap && (
-              <button
-                onClick={onCloseMobileMap}
-                type="button"
-                className="md:hidden inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold text-[#edf3ea] hover:bg-white/20 transition shrink-0"
-                title="Return to search console"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 text-amber-400" />
-                <span>Console</span>
-              </button>
-            )}
-            <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
-            <span className="font-mono text-xs font-bold text-[#edf3ea] truncate">
+      {/* Layer 1: Top Floating Header Controls & Capsule Pills */}
+      <div className="fixed top-3 left-3 right-3 z-20 md:static md:w-full rounded-3xl border border-[rgba(237,243,234,0.18)] bg-[#091510]/90 p-3 space-y-2.5 text-left backdrop-blur-xl shadow-2xl">
+        {/* Top Header Row: Back Button, Title, Notification Bell */}
+        <div className="flex items-center justify-between gap-2 px-1">
+          {onCloseMobileMap ? (
+            <button
+              onClick={onCloseMobileMap}
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition shadow-lg shrink-0"
+              title="Return to console"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          ) : (
+            <div className="h-10 w-10 shrink-0" />
+          )}
+
+          <div className="text-center truncate flex-1">
+            <span className="font-sans text-sm font-semibold tracking-tight text-[#edf3ea] block truncate">
+              Parcel &amp; Site Intelligence
+            </span>
+            <span className="font-mono text-[10px] text-[#88aa8f] block truncate">
               {currentCoords.lat.toFixed(4)}° N, {currentCoords.lng.toFixed(4)}° W
             </span>
-            <span className="hidden sm:inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-300 shrink-0">
-              Draggable Pin Active
-            </span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleFlyToUserLocation}
-              disabled={locatingUser}
-              type="button"
-              className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 font-mono text-xs font-bold text-black hover:bg-amber-300 transition shadow-md disabled:opacity-50"
-              title="Fly map directly to your current device location"
-            >
-              <Locate className={`h-3.5 w-3.5 text-black ${locatingUser ? 'animate-spin' : ''}`} />
-              <span>{locatingUser ? 'Locating...' : 'Locate Me'}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition shadow-lg shrink-0"
+            title="Active Alerts"
+          >
+            <Bell className="h-4 w-4 text-white/90" />
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 font-mono text-[9px] font-bold text-white shadow-sm border border-[#091510]">
+              2
+            </span>
+          </button>
         </div>
 
-        {/* Property Disposition Chips (Horizontally Swipeable on Mobile) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-1 border-t border-[rgba(237,243,234,0.1)] font-mono text-[10px] no-scrollbar">
-          <span className="text-white/40 uppercase font-bold text-[9px] shrink-0 mr-0.5">Dispositions:</span>
+        {/* Capsule Selector Row (Matching Screenshot Pill Selector UI) */}
+        <div className="flex items-center justify-center gap-2 pt-0.5">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#88aa8f]/40 bg-[#102119]/85 px-4 py-1.5 text-xs font-mono font-bold text-emerald-300 backdrop-blur-md shadow-xl">
+            <MapPin className="h-3.5 w-3.5 text-amber-400" />
+            <span className="truncate max-w-[130px]">Target Node 6023</span>
+            <ChevronDown className="h-3.5 w-3.5 text-emerald-400/80 ml-0.5" />
+          </div>
+
+          <button
+            onClick={handleToggleMapStyle}
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#88aa8f]/40 bg-[#102119]/85 px-4 py-1.5 text-xs font-mono font-bold text-[#c8b97a] backdrop-blur-md shadow-xl hover:bg-[#183327] transition"
+          >
+            <Layers className="h-3.5 w-3.5 text-amber-400" />
+            <span>{mapStyle === 'satellite' ? 'Satellite' : 'Vector'}</span>
+          </button>
+        </div>
+
+        {/* Disposition Filter Pills Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-1.5 border-t border-[rgba(237,243,234,0.1)] font-mono text-[10px] no-scrollbar">
+          <span className="text-white/40 uppercase font-bold text-[9px] shrink-0 mr-0.5">Filter:</span>
           <button
             onClick={() => setDispositionFilter('all')}
             type="button"
@@ -505,7 +526,7 @@ export function InteractivePinMapCanvas({
       </div>
 
       {/* Layer 2: Right-Rail Floating Action Buttons */}
-      <div className="fixed right-3 top-28 z-20 flex flex-col gap-2 md:absolute md:top-auto md:bottom-4 md:right-4">
+      <div className="fixed right-3 top-36 z-20 flex flex-col gap-2 md:absolute md:top-auto md:bottom-4 md:right-4">
         <button
           onClick={handleFlyToUserLocation}
           disabled={locatingUser}
@@ -552,6 +573,28 @@ export function InteractivePinMapCanvas({
           >
             <Minus className="h-4 w-4" />
           </button>
+        </div>
+      </div>
+
+      {/* Floating Glassmorphism Stat Overlay Card (Matching Reference Image Lower Left Card) */}
+      <div className="fixed bottom-36 left-4 z-20 w-[58%] max-w-[210px] rounded-3xl border border-white/25 bg-[#091510]/85 p-4 text-left shadow-[0_12px_40px_rgba(0,0,0,0.65)] backdrop-blur-xl space-y-1.5 md:hidden">
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="font-mono text-[10px] uppercase font-bold text-[#88aa8f] block tracking-wider">
+              Sweat Equity Credit
+            </span>
+            <span className="text-[10px] text-white/60 block truncate">
+              Next: 99-Yr Land Trust
+            </span>
+          </div>
+          <ArrowUpRight className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+        </div>
+
+        <div className="pt-1 flex items-baseline gap-1">
+          <span className="font-mono text-4xl font-light tracking-tight text-[#edf3ea]">
+            87
+          </span>
+          <span className="font-mono text-xs font-bold text-amber-400">%</span>
         </div>
       </div>
 

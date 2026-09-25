@@ -96,7 +96,7 @@ export function MobileMapBottomSheet({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out md:hidden ${snapHeights[snapState]} rounded-t-[28px] border-t border-[rgba(237,243,234,0.2)] bg-[#091510]/95 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)] text-[#edf3ea] flex flex-col overflow-hidden`}
+      className={`fixed bottom-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out md:hidden ${snapHeights[snapState]} rounded-t-[32px] border-t border-white/20 bg-[#091510]/95 backdrop-blur-2xl shadow-[0_-12px_40px_rgba(0,0,0,0.85)] text-[#edf3ea] flex flex-col overflow-hidden`}
       style={{
         transform: currentYOffset ? `translateY(${Math.max(-80, Math.min(80, currentYOffset))}px)` : 'none',
       }}
@@ -113,7 +113,7 @@ export function MobileMapBottomSheet({
         }}
         className="cursor-grab active:cursor-grabbing flex flex-col items-center justify-center pt-3 pb-2 px-4 shrink-0 hover:bg-white/[0.03] transition"
       >
-        <div className="h-1.5 w-12 rounded-full bg-amber-400/60 shadow-sm" />
+        <div className="h-1.5 w-12 rounded-full bg-amber-400/70 shadow-sm" />
         <div className="w-full flex items-center justify-between mt-2 font-mono text-[10px] text-amber-300 font-bold uppercase tracking-wider">
           <span className="flex items-center gap-1">
             <Compass className="h-3 w-3 text-amber-400" />
@@ -152,9 +152,11 @@ export function MobileMapBottomSheet({
       </div>
 
       {/* Peek State Header (Always visible in all snap states) */}
-      <div className="px-4 py-1.5 border-b border-[rgba(237,243,234,0.08)] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 overflow-hidden pr-2">
-          <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
+      <div className="px-4 py-2 border-b border-[rgba(237,243,234,0.08)] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5 overflow-hidden pr-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/40 shrink-0">
+            <MapPin className="h-4 w-4 text-amber-400" />
+          </div>
           <div className="truncate">
             <span className="font-mono text-xs font-bold text-[#edf3ea] truncate block">
               {activeAddress || `GPS Target: ${currentCoords.lat.toFixed(4)}° N, ${currentCoords.lng.toFixed(4)}° W`}
@@ -169,15 +171,27 @@ export function MobileMapBottomSheet({
           onClick={onInspectCurrentCoords}
           type="button"
           disabled={searchingParcel}
-          className="shrink-0 rounded-full bg-amber-400 px-3 py-1.5 font-mono text-[11px] font-bold text-black hover:bg-amber-300 transition shadow-lg disabled:opacity-50"
+          className="shrink-0 rounded-full bg-amber-400 px-3.5 py-1.5 font-mono text-[11px] font-bold text-black hover:bg-amber-300 transition shadow-lg disabled:opacity-50"
         >
-          {searchingParcel ? 'Searching...' : '⚡ Inspect Parcel'}
+          {searchingParcel ? 'Searching...' : '⚡ Inspect'}
         </button>
       </div>
 
       {/* Scrollable Sheet Content Body (Visible in Half & Full Snap States) */}
       {snapState !== 'peek' && (
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-left">
+          {/* Warning / Dispositions Section Header (Matching Reference Screenshot) */}
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
+              <span className="font-sans text-xs font-semibold text-rose-200">
+                Warning: Delinquent &amp; In-Rem Notice (2 sites)
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-rose-300 font-bold bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/30">
+              Active Warning
+            </span>
+          </div>
           {/* Quick Address Search Input Bar */}
           {onSearchAddress && (
             <form
