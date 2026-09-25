@@ -884,90 +884,92 @@ export function ParticipantProfileWorkspace() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25 }}
-                className="rounded-[28px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-8 shadow-2xl backdrop-blur-sm text-center space-y-6"
+                className={
+                  searchMode === 'map'
+                    ? 'w-full'
+                    : 'rounded-[28px] border border-[rgba(237,243,234,0.14)] bg-white/[0.04] p-8 shadow-2xl backdrop-blur-sm text-center space-y-6'
+                }
               >
-                <div className="space-y-3">
-                  {/* Gentle Recent Searches Pill Bar */}
-                  {searchHistory && searchHistory.length > 0 ? (
-                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
-                      <button
-                        onClick={() => setHistoryDrawerOpen(true)}
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-full border border-[#88aa8f]/40 bg-[#102119] px-3 py-0.5 text-[11px] font-mono font-bold text-[#c8b97a] hover:bg-[#1b3327] hover:border-[#c8b97a] transition shadow-sm"
-                        title="Open Detailed Search History Drawer"
-                      >
-                        <History className="h-3 w-3 text-[#c8b97a]" />
-                        <span>(ⓘ History)</span>
-                      </button>
-                      <button
-                        onClick={() => setHistoryDrawerOpen(true)}
-                        type="button"
-                        className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.7)] hover:text-[#c8b97a] transition hidden sm:inline"
-                        title="Open History Tray"
-                      >
-                        Recent:
-                      </button>
-                      {searchHistory.slice(0, 4).map((item) => (
+                {searchMode !== 'map' && (
+                  <div className="space-y-3">
+                    {/* Gentle Recent Searches Pill Bar */}
+                    {searchHistory && searchHistory.length > 0 ? (
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
                         <button
-                          key={item.id}
-                          onClick={() => {
-                            setCommandSearchInput(item.address || item.query)
-                            handleReinspectHistoryItem(item)
-                          }}
+                          onClick={() => setHistoryDrawerOpen(true)}
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-[#c8b97a] hover:bg-[#88aa8f]/20 hover:text-white transition shadow-sm"
+                          className="inline-flex items-center gap-1 rounded-full border border-[#88aa8f]/40 bg-[#102119] px-3 py-0.5 text-[11px] font-mono font-bold text-[#c8b97a] hover:bg-[#1b3327] hover:border-[#c8b97a] transition shadow-sm"
+                          title="Open Detailed Search History Drawer"
                         >
-                          <span>{item.mode === 'map' ? '🗺️' : '📍'}</span>
-                          <span className="truncate max-w-[130px]">{item.address || item.query}</span>
+                          <History className="h-3 w-3 text-[#c8b97a]" />
+                          <span>(ⓘ History)</span>
+                        </button>
+                        <button
+                          onClick={() => setHistoryDrawerOpen(true)}
+                          type="button"
+                          className="font-mono text-[10px] uppercase font-bold text-[rgba(237,243,234,0.7)] hover:text-[#c8b97a] transition hidden sm:inline"
+                          title="Open History Tray"
+                        >
+                          Recent:
+                        </button>
+                        {searchHistory.slice(0, 4).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setCommandSearchInput(item.address || item.query)
+                              handleReinspectHistoryItem(item)
+                            }}
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-full border border-[rgba(237,243,234,0.14)] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-[#c8b97a] hover:bg-[#88aa8f]/20 hover:text-white transition shadow-sm"
+                          >
+                            <span>{item.mode === 'map' ? '🗺️' : '📍'}</span>
+                            <span className="truncate max-w-[130px]">{item.address || item.query}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
+                        SEARCH PARCELS &amp; MUNICIPAL LAND INVENTORY
+                      </span>
+                    )}
+
+                    {/* Mode Switcher Tabs */}
+                    <div className="flex justify-center gap-1.5 pt-1">
+                      {(
+                        [
+                          { id: 'address', label: '🔍 Address Search', icon: Search },
+                          { id: 'map', label: '🗺️ Interactive Map', icon: MapIcon },
+                          { id: 'photo', label: '📸 Take / Upload Photo', icon: Camera },
+                        ] as const
+                      ).map((mode) => (
+                        <button
+                          key={mode.id}
+                          onClick={() => setSearchMode(mode.id)}
+                          type="button"
+                          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                            searchMode === mode.id
+                              ? 'bg-[#88aa8f] text-[#07100c] shadow-sm font-bold'
+                              : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
+                          }`}
+                        >
+                          {mode.label}
                         </button>
                       ))}
                     </div>
-                  ) : (
-                    <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8b97a]">
-                      SEARCH PARCELS &amp; MUNICIPAL LAND INVENTORY
-                    </span>
-                  )}
 
-                  {/* Mode Switcher Tabs */}
-                  <div className="flex justify-center gap-1.5 pt-1">
-                    {(
-                      [
-                        { id: 'address', label: '🔍 Address Search', icon: Search },
-                        { id: 'map', label: '🗺️ Interactive Map', icon: MapIcon },
-                        { id: 'photo', label: '📸 Take / Upload Photo', icon: Camera },
-                      ] as const
-                    ).map((mode) => (
-                      <button
-                        key={mode.id}
-                        onClick={() => setSearchMode(mode.id)}
-                        type="button"
-                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                          searchMode === mode.id
-                            ? 'bg-[#88aa8f] text-[#07100c] shadow-sm font-bold'
-                            : 'border border-[rgba(237,243,234,0.14)] bg-white/[0.03] text-[rgba(237,243,234,0.7)] hover:bg-white/[0.06] hover:text-white'
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    ))}
+                    <h2 className="font-serif text-3xl font-medium tracking-tight text-[#edf3ea] sm:text-4xl pt-1">
+                      {searchMode === 'address'
+                        ? 'Search Any Parcel or City Node Worldwide'
+                        : 'Take Photo or Upload EXIF Geotag Image'}
+                    </h2>
+
+                    <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
+                      {searchMode === 'address'
+                        ? 'Type any street address (e.g. 639 N 25th St) or city name (e.g. Waukesha, Kissimmee) to auto-search parcels or switch to Interactive Map.'
+                        : 'Snap or upload a photo of any lot. Auto-extract GPS coordinates to launch parcel underwriting.'}
+                    </p>
                   </div>
-
-                  <h2 className="font-serif text-3xl font-medium tracking-tight text-[#edf3ea] sm:text-4xl pt-1">
-                    {searchMode === 'address'
-                      ? 'Search Any Parcel or City Node Worldwide'
-                      : searchMode === 'map'
-                      ? 'Embedded Interactive Google / Apple Maps Viewer'
-                      : 'Take Photo or Upload EXIF Geotag Image'}
-                  </h2>
-
-                  <p className="text-sm text-[rgba(237,243,234,0.65)] max-w-xl mx-auto leading-relaxed">
-                    {searchMode === 'address'
-                      ? 'Type any street address (e.g. 639 N 25th St) or city name (e.g. Waukesha, Kissimmee) to auto-search parcels or switch to Interactive Map.'
-                      : searchMode === 'map'
-                      ? 'Pan, zoom, and tap any location on the map to inspect real estate intelligence and 0.5-mile radius off-market records.'
-                      : 'Snap or upload a photo of any lot. Auto-extract GPS coordinates to launch parcel underwriting.'}
-                  </p>
-                </div>
+                )}
 
                 {/* MODE 1: Address & City Search Form */}
                 {searchMode === 'address' && (
