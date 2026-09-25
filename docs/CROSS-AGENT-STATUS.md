@@ -72,5 +72,12 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
 - **Firebase Storage Rules & Unauthorized Error Handling**: Created `storage.rules` granting public read on `landing-media/**` and write access to authenticated users, added `storage` to `firebase.json`, and added clear UI error messaging advising on admin auth and direct URL fallback.
 - **90-Second Operating Loop Complete Video Suite**: Integrated official video assets for Chapter 3 (`Crews_renovating_building_for_ca…_20260924194914.mp4`) and Chapter 4 (`Community_land_trust_membership_UI_20260924200304.mp4`) into `lib/landingSlides.ts`. All 4 chapters now have permanent Firebase Storage video assets assigned.
 
+- **Full-Screen Mobile Navigation Menu (`BeamGroundsNav.tsx`)**: Replaced cramped floating dropdown on mobile with an immersive full-screen glass modal (`fixed inset-0 z-50 bg-[#07100c]/95 backdrop-blur-2xl p-6`). Features executive switcher tabs for `BEAM` (Admin Login, Participant Login, Neighborhood Login) and `GROUNDS` (Process Slides 01-03, Properties Directory, Participant Portal, Admin Console) styled as transparent glass tiles with descriptive subtitles, category badges, and icons, maintaining the dark emerald and gold BEAM executive visual language. Desktop dropdowns remain lightweight and intact.
+- **Ambient Artwork Auto-Cycling (`LandingShowcase.tsx`)**: Removed the manual "Artwork 1/2" toggle button from all views. Configured slides with multiple background images (such as Slide 03) to automatically crossfade between artwork variations on a serene 6-second ambient cadence with smooth 1000ms CSS transitions.
+- **Canva / Instagram-Story Editorial Micro-Deck (`PresentationDeckModal.tsx`)**: Replaced dense scrollable drawers on primary CTA click ("Inspect Capital Mechanics", "Inspect Labor Mechanics", "Inspect Equity Mechanics") with an immersive full-screen presentation deck:
+  - Top segmented story progress bars (`— — — —`) with active glow tracking.
+  - One crisp idea per slide featuring bold hero stats, punchy thesis narratives, safeguard checkmark blocks, and direct action triggers (90s Briefing, Agenda Queue, external portals).
+  - Multi-input navigation: Mobile touch swipes (horizontal dominance check), Instagram Stories-style tap zones (left 30% back, right 70% forward), and keyboard hotkeys (ArrowLeft, ArrowRight, Spacebar, Escape).
+
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*

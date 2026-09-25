@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronLeft, ChevronRight, Play, MessageSquarePlus, Maximize2, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Play, MessageSquarePlus, Maximize2 } from 'lucide-react'
 import { landingSlides, type LandingSlide } from '@/lib/landingSlides'
 import { useLandingConfig } from '@/lib/useLandingConfig'
 import { BeamGroundsNav } from '@/components/BeamGroundsNav'
-import { SlideEscalationDrawer } from '@/components/landing/SlideEscalationDrawer'
+import { PresentationDeckModal } from '@/components/landing/PresentationDeckModal'
 import { ExecutiveBriefingModal } from '@/components/landing/ExecutiveBriefingModal'
 import { AgendaQueueModal } from '@/components/landing/AgendaQueueModal'
 import { cn } from '@/lib/utils'
@@ -97,6 +97,25 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
     { label: 'Admin Console ↗', href: '/portal/admin/landing' },
   ]
 
+  // Auto-cycle multi-image slides smoothly every 6 seconds on ambient cadence
+  useEffect(() => {
+    if (!slide) return
+    const images =
+      slide.backgroundImages && slide.backgroundImages.length > 1
+        ? slide.backgroundImages
+        : []
+    if (images.length <= 1) return
+
+    const timer = setInterval(() => {
+      setBgIndices((prev) => ({
+        ...prev,
+        [slide.id]: ((prev[slide.id] ?? 0) + 1) % images.length,
+      }))
+    }, 6000)
+
+    return () => clearInterval(timer)
+  }, [slide])
+
   if (!slide) return null
 
   // Support multiple background images for the slide
@@ -106,14 +125,6 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
       : [slide.fallbackImageUrl].filter(Boolean)
   const activeBgIndex = (bgIndices[slide.id] ?? 0) % (currentImages.length || 1)
   const activeImageUrl = currentImages[activeBgIndex] || slide.fallbackImageUrl
-
-  function cycleBackgroundVariant() {
-    if (currentImages.length <= 1) return
-    setBgIndices((prev) => ({
-      ...prev,
-      [slide.id]: (activeBgIndex + 1) % currentImages.length,
-    }))
-  }
 
   return (
     <>
@@ -143,7 +154,7 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
             src={activeImageUrl}
             alt={slide.shortTitle}
             onError={() => setImgFailed((current) => ({ ...current, [activeImageUrl]: true }))}
-            className="absolute inset-0 h-full w-full object-cover opacity-45 transition-opacity duration-700"
+            className="absolute inset-0 h-full w-full object-cover opacity-45 transition-opacity duration-1000 ease-in-out"
           />
         ) : null}
 
@@ -159,22 +170,8 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
           />
         </div>
 
-        {/* Top Right Direct Controls & Variant Switcher */}
+        {/* Top Right Direct Controls */}
         <div className="absolute right-5 top-5 z-30 flex items-center gap-3 sm:right-8 sm:top-7">
-          {/* Multiple Artwork Switcher */}
-          {currentImages.length > 1 ? (
-            <button
-              type="button"
-              onClick={cycleBackgroundVariant}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/90 backdrop-blur-md hover:bg-black/70 hover:text-white transition"
-              title="Click to toggle between artwork variants"
-            >
-              <Sparkles className="h-3 w-3 text-beam-gold" />
-              <span>
-                Artwork {activeBgIndex + 1}/{currentImages.length}
-              </span>
-            </button>
-          ) : null}
 
           <button
             type="button"
@@ -295,8 +292,8 @@ export function LandingShowcase({ slides: initialSlides }: { slides?: LandingSli
         ) : null}
       </section>
 
-      {/* Escalation Drawer */}
-      <SlideEscalationDrawer
+      {/* Editorial Micro-Deck Presentation */}
+      <PresentationDeckModal
         slide={slide}
         isOpen={isEscalated}
         onClose={() => setIsEscalated(false)}
