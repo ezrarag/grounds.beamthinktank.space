@@ -38,6 +38,7 @@ import { usePortalAccessState } from '@/components/PortalAccessProvider'
 import type { ParcelResult } from '@/app/api/parcel/route'
 import { ParcelIntelligenceWorkspaceModal } from '@/components/profile/ParcelIntelligenceWorkspaceModal'
 import { ParcelErrorBoundary } from '@/components/ParcelErrorBoundary'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 
 export interface NeighborhoodRole {
   id: string
@@ -364,16 +365,20 @@ export function NeighborhoodCommunityWorkspace() {
 
       {/* HEADER SECTION (Organized like Admin Console) */}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
-            <Compass className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="eyebrow text-xs uppercase font-mono text-[#88aa8f]">Neighborhood Community Console</p>
-            <h1 className="mt-0.5 text-2xl font-semibold text-white sm:text-3xl">Community Revitalization &amp; Sourcing</h1>
-            <p className="mt-1 text-xs text-white/50 font-mono">
-              Signed in as: <span className="text-white/80">{user?.email || user?.displayName || 'Community Neighbor'}</span> (Non-Monetary Portal)
-            </p>
+        <div className="flex items-center gap-4">
+          <BeamGroundsNav />
+          <div className="hidden sm:block h-6 w-px bg-white/10" />
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
+              <Compass className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="eyebrow text-xs uppercase font-mono text-[#88aa8f]">Neighborhood Community Console</p>
+              <h1 className="mt-0.5 text-2xl font-semibold text-white sm:text-3xl">Community Revitalization &amp; Sourcing</h1>
+              <p className="mt-1 text-xs text-white/50 font-mono">
+                Signed in as: <span className="text-white/80">{user?.email || user?.displayName || 'Community Neighbor'}</span> (Non-Monetary Portal)
+              </p>
+            </div>
           </div>
         </div>
 

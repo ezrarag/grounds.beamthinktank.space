@@ -22,6 +22,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage, signOutUser, sanitizeForFirestore } from '@/lib/firebase'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import {
   landingSlides,
   defaultOperatingLoopChapters,
@@ -249,13 +250,17 @@ export function LandingShowcaseManager() {
     <div className="space-y-6">
       {/* Top Exit Navigation Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <Link
-          href="/portal/acquisition"
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Acquisition Console
-        </Link>
+        <div className="flex items-center gap-4">
+          <BeamGroundsNav />
+          <div className="hidden sm:block h-4 w-px bg-white/10" />
+          <Link
+            href="/portal/acquisition"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Acquisition Console
+          </Link>
+        </div>
 
         <div className="flex items-center gap-2">
           <Link

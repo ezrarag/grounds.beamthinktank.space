@@ -34,6 +34,7 @@ import {
   Film,
 } from 'lucide-react'
 import { LandingShowcaseManager } from '@/components/admin/LandingShowcaseManager'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import {
   collection,
   doc,
@@ -317,20 +318,24 @@ export function ExecutiveOperationsConsole() {
       {/* Top Header & Context Bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07100c]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-emerald-400">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                  BEAM Grounds // Executive Command
-                </span>
-                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-4">
+            <BeamGroundsNav />
+            <div className="hidden sm:block h-6 w-px bg-white/10" />
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-emerald-400">
+                <ShieldCheck className="h-6 w-6" />
               </div>
-              <h1 className="text-xl font-bold text-white sm:text-2xl">
-                Operations & Participant Intelligence
-              </h1>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                    Executive Command
+                  </span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <h1 className="text-lg font-bold text-white sm:text-xl">
+                  Operations & Participant Intelligence
+                </h1>
+              </div>
             </div>
           </div>
 

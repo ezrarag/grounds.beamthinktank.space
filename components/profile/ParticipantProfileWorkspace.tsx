@@ -65,6 +65,7 @@ import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
 import { RedevelopmentPipelineBoard } from '@/components/redevelopment/RedevelopmentPipelineBoard'
 import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
 import { MobileMapBottomSheet } from '@/components/map/MobileMapBottomSheet'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 import type { PropertyDispositionFilter } from '@/components/profile/InteractivePinMapCanvas'
 
 const InteractivePinMapCanvas = dynamic(
@@ -648,6 +649,8 @@ export function ParticipantProfileWorkspace() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[rgba(237,243,234,0.12)] pb-6">
           {/* Avatar + Logout Dropdown + Name + Edit Profile Pill */}
           <div className="flex items-center gap-4">
+            <BeamGroundsNav />
+            <div className="hidden sm:block h-6 w-px bg-white/10" />
             {/* Clickable Avatar Trigger for Logout */}
             <div className="relative">
               <button

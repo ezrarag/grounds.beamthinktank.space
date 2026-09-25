@@ -79,5 +79,11 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
   - One crisp idea per slide featuring bold hero stats, punchy thesis narratives, safeguard checkmark blocks, and direct action triggers (90s Briefing, Agenda Queue, external portals).
   - Multi-input navigation: Mobile touch swipes (horizontal dominance check), Instagram Stories-style tap zones (left 30% back, right 70% forward), and keyboard hotkeys (ArrowLeft, ArrowRight, Spacebar, Escape).
 
+- **Mobile Fullscreen Menu Stacking Context Fix (`BeamGroundsNav.tsx`)**: Teleported the mobile menu modal directly to `document.body` via React `createPortal` with safe-area insets (`env(safe-area-inset-top)` / `env(safe-area-inset-bottom)`). This fixes the issue where `backdrop-blur-xl` or container constraints in ancestor headers (like `AppHeader`) trapped `position: fixed` elements within a 68px bounding box, clipping the menu tiles and exposing the page underneath.
+- **Header Architecture & Chrome Deduplication**:
+  - `ConditionalHeader.tsx`: Suppressed `AppHeader` on self-contained portal workspaces (`/portal/acquisition`, `/portal/admin`, `/portal/admin/landing`, `/portal/neighborhood`, `/portal/participant`, and `/login`) to eliminate double/stacked sticky headers across the app.
+  - Unified `BeamGroundsNav` into each console header (`ExecutiveOperationsConsole.tsx`, `LandingShowcaseManager.tsx`, `NeighborhoodCommunityWorkspace.tsx`, `ParticipantProfileWorkspace.tsx`, and `app/portal/admin/page.tsx`), providing continuous portal-switching without redundant header chrome.
+  - Updated `AppHeader.tsx` `groundsNavItems` to align with the core process slides (01 Capital, 02 Labor, 03 Equity) and primary directories.
+
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*

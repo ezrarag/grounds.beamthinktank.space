@@ -11,11 +11,12 @@ import type { User } from 'firebase/auth'
 import { cn } from '@/lib/utils'
 
 const groundsNavItems = [
-  { href: '/', label: 'Overview' },
+  { href: '/#slide-0', label: '01 Capital' },
+  { href: '/#slide-1', label: '02 Labor' },
+  { href: '/#slide-2', label: '03 Equity' },
   { href: '/properties', label: 'Properties' },
-  { href: '/testimony', label: 'Testimony' },
-  { href: '/about', label: 'About' },
-  { href: '/#tracks', label: 'Tracks' },
+  { href: '/portal/participant', label: 'Participant Portal' },
+  { href: '/portal/acquisition', label: 'Admin Console' },
 ]
 
 export function AppHeader({ config: _config, className }: { config: NGOConfig; className?: string }) {

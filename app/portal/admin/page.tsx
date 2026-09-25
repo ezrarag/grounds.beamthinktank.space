@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useIsAdmin } from '@/lib/useIsAdmin'
 import { signOutUser } from '@/lib/firebase'
+import { BeamGroundsNav } from '@/components/BeamGroundsNav'
 
 const CARDS = [
   {
@@ -94,18 +95,22 @@ export default function AdminHomePage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="eyebrow">Admin Console</p>
-            <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">What do you want to do?</h1>
-            {email ? (
-              <p className="mt-1 text-xs text-white/50 font-mono">
-                Signed in as: <span className="text-white/80">{email}</span>
-              </p>
-            ) : null}
+        <div className="flex items-center gap-4">
+          <BeamGroundsNav />
+          <div className="hidden sm:block h-6 w-px bg-white/10" />
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-grounds-sand">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="eyebrow">Admin Console</p>
+              <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">What do you want to do?</h1>
+              {email ? (
+                <p className="mt-1 text-xs text-white/50 font-mono">
+                  Signed in as: <span className="text-white/80">{email}</span>
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
 
