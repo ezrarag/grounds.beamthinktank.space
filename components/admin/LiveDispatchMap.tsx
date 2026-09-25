@@ -38,28 +38,6 @@ export const SEEDED_PARTICIPANT_BEACONS: ParticipantBeacon[] = [
     skills: ['Violinist', 'Luthier Apprentice', 'Material Movement'],
     sweatEquityHours: 72,
   },
-  {
-    uid: 'participant-002',
-    displayName: 'Marcus Vance',
-    handle: '@marcus_vance',
-    cityState: 'Milwaukee, WI',
-    lat: 43.045,
-    lng: -87.935,
-    isBroadcasting: true,
-    skills: ['Carpentry & Framing', 'Drywall', 'Demolition'],
-    sweatEquityHours: 110,
-  },
-  {
-    uid: 'participant-003',
-    displayName: 'Elena Rios',
-    handle: '@elena_rios',
-    cityState: 'Atlanta, GA',
-    lat: 33.754,
-    lng: -84.372,
-    isBroadcasting: true,
-    skills: ['Architectural Survey', 'Permits', 'Site Stewardship'],
-    sweatEquityHours: 95,
-  },
 ]
 
 export interface LiveDispatchMapProps {

@@ -31,7 +31,9 @@ import {
   RefreshCw,
   Loader2,
   Video,
+  Film,
 } from 'lucide-react'
+import { LandingShowcaseManager } from '@/components/admin/LandingShowcaseManager'
 import {
   collection,
   doc,
@@ -104,66 +106,13 @@ const SEEDED_PARTICIPANTS: LiveParticipant[] = [
     role: 'admin',
     approvedHours: 72,
     sweatEquityUSD: 2160,
-    linkedPropertyAddress: '639 N 25th St, Milwaukee, WI',
-    linkedParcelId: '388-1204-000',
-    workRosterAttachments: [
-      {
-        assetId: 'mke-woodwork-01',
-        propertyName: 'Historic Central Methodist',
-        address: '2449 N 2nd St, Milwaukee',
-        skillsOrRoles: ['Luthier & Fine Woodworker', 'Site Stewardship'],
-        notifyOnWorkAvailable: true,
-        attachedAt: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    uid: 'participant-002',
-    displayName: 'Marcus Vance',
-    handle: '@marcus_vance',
-    email: 'marcus.vance@example.com',
-    pathwayRole: 'earn',
-    role: 'participant',
-    approvedHours: 110,
-    sweatEquityUSD: 3300,
-    linkedPropertyAddress: '800 W Wells St, Milwaukee, WI',
-    linkedParcelId: '392-0501-100',
-    workRosterAttachments: [
-      {
-        assetId: 'mke-wells-02',
-        propertyName: 'Wells St Trades Hub',
-        address: '800 W Wells St',
-        skillsOrRoles: ['Carpentry & Framing', 'Demolition & Cleanout'],
-        notifyOnWorkAvailable: true,
-        attachedAt: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    uid: 'participant-003',
-    displayName: 'Elena Rios',
-    handle: '@elena_rios',
-    email: 'elena.rios@example.com',
-    pathwayRole: 'teach',
-    role: 'verified-professional',
-    approvedHours: 95,
-    sweatEquityUSD: 2850,
-    linkedPropertyAddress: '1420 Bankhead Hwy, Atlanta, GA',
-    linkedParcelId: '14-0082-0001',
-    workRosterAttachments: [
-      {
-        assetId: 'atl-bankhead-03',
-        propertyName: 'Atlanta Community Sound Lab',
-        address: '1420 Bankhead Hwy',
-        skillsOrRoles: ['Acoustics & AV Engineering', 'Permit Diligence'],
-        notifyOnWorkAvailable: true,
-        attachedAt: new Date().toISOString(),
-      },
-    ],
+    linkedPropertyAddress: '',
+    linkedParcelId: '',
+    workRosterAttachments: [],
   },
 ]
 
-type ActiveTab = 'participants' | 'interest' | 'pipeline' | 'agenda'
+type ActiveTab = 'participants' | 'interest' | 'pipeline' | 'agenda' | 'landing'
 
 export function ExecutiveOperationsConsole() {
   const { isAdmin, ready: adminReady, email: adminEmail } = useIsAdmin()
@@ -184,28 +133,50 @@ export function ExecutiveOperationsConsole() {
   useEffect(() => {
     if (!db) return
     const unsub = onSnapshot(collection(db, 'participantProfiles'), (snapshot) => {
-      if (!snapshot.empty) {
-        const list: LiveParticipant[] = []
-        snapshot.forEach((d) => {
-          const data = d.data()
-          const approved = typeof data.approvedHours === 'number' ? data.approvedHours : 0
-          list.push({
-            uid: d.id,
-            displayName: data.displayName || data.name || 'Anonymous Participant',
-            handle: `@${(data.email ? data.email.split('@')[0] : d.id).toLowerCase()}`,
-            email: data.email || '',
-            pathwayRole: data.pathwayRole || 'earn',
-            role: data.role || 'participant',
-            approvedHours: approved,
-            sweatEquityUSD: approved * 30, // HUD standard $30/hr
-            linkedPropertyAddress: data.linkedPropertyAddress || data.activeHomestead?.address || '',
-            linkedParcelId: data.linkedParcelId || data.activeHomestead?.parcelId || '',
-            workRosterAttachments: data.workRosterAttachments || [],
-            updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || data.updatedAt || '',
-          })
+      const list: LiveParticipant[] = []
+      snapshot.forEach((d) => {
+        const data = d.data()
+        const email = (data.email || '').toLowerCase()
+        // Filter out static test mocks
+        if (
+          email.includes('example.com') ||
+          email.includes('marcus.vance') ||
+          email.includes('elena.rios') ||
+          d.id === 'participant-002' ||
+          d.id === 'participant-003'
+        ) {
+          return
+        }
+
+        const approved = typeof data.approvedHours === 'number'
+          ? data.approvedHours
+          : (typeof data.sweatEquityLedger?.approvedHours === 'number' ? data.sweatEquityLedger.approvedHours : 0)
+
+        const isEzra = email === 'ezra@readyaimgo.biz'
+
+        list.push({
+          uid: d.id,
+          displayName: data.displayName || data.name || (isEzra ? 'Ezra Haugabrooks' : 'Participant Member'),
+          handle: `@${(email ? email.split('@')[0] : d.id).toLowerCase()}`,
+          email: data.email || (isEzra ? 'ezra@readyaimgo.biz' : ''),
+          pathwayRole: data.pathwayRole || (isEzra ? 'own' : 'earn'),
+          role: data.role || (isEzra ? 'admin' : 'participant'),
+          approvedHours: isEzra && approved === 0 ? 72 : approved,
+          sweatEquityUSD: (isEzra && approved === 0 ? 72 : approved) * 30, // HUD standard $30/hr
+          linkedPropertyAddress: data.linkedPropertyAddress || data.activeHomestead?.address || '',
+          linkedParcelId: data.linkedParcelId || data.activeHomestead?.parcelId || '',
+          workRosterAttachments: data.workRosterAttachments || [],
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || data.updatedAt || '',
         })
-        setParticipants(list)
+      })
+
+      // If Ezra is not yet in the Firestore collection, ensure Ezra's approved 72 hrs are present
+      const hasEzra = list.some((p) => p.email.toLowerCase() === 'ezra@readyaimgo.biz')
+      if (!hasEzra) {
+        list.unshift(SEEDED_PARTICIPANTS[0])
       }
+
+      setParticipants(list)
     })
     return () => unsub()
   }, [])
@@ -381,13 +352,18 @@ export function ExecutiveOperationsConsole() {
               Participant Portal View ↗
             </Link>
 
-            <Link
-              href="/portal/admin/landing"
-              className="inline-flex items-center gap-1.5 rounded-full border border-beam-gold/30 bg-amber-950/40 px-3.5 py-1.5 font-mono text-xs text-amber-200 hover:bg-amber-900/50 transition"
+            <button
+              type="button"
+              onClick={() => setActiveTab('landing')}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-mono text-xs transition ${
+                activeTab === 'landing'
+                  ? 'border-beam-gold bg-beam-gold/20 text-beam-gold font-semibold shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                  : 'border-beam-gold/30 bg-amber-950/40 text-amber-200 hover:bg-amber-900/50'
+              }`}
             >
-              <Video className="h-3.5 w-3.5" />
+              <Film className="h-3.5 w-3.5" />
               Landing Media & 90s Loop
-            </Link>
+            </button>
 
             <button
               type="button"
@@ -543,6 +519,19 @@ export function ExecutiveOperationsConsole() {
             <MessageSquare className="h-4 w-4" />
             Stakeholder Meeting Queue ({agendaItems.length})
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('landing')}
+            className={`flex items-center gap-2 whitespace-nowrap pb-3 font-mono text-xs uppercase tracking-wider transition ${
+              activeTab === 'landing'
+                ? 'border-b-2 border-emerald-400 text-emerald-400 font-semibold'
+                : 'text-white/60 hover:text-white'
+            }`}
+          >
+            <Film className="h-4 w-4" />
+            Landing Media & 90s Loop
+          </button>
         </div>
 
         {/* TAB 1: PARTICIPANT ROSTER & LABOR SHIFTS */}
@@ -623,7 +612,7 @@ export function ExecutiveOperationsConsole() {
                               <span className="truncate max-w-[200px]">{p.linkedPropertyAddress}</span>
                             </div>
                           ) : (
-                            <span className="text-white/40 italic">Exploring $1 Homesteads</span>
+                            <span className="text-white/40 italic">No submissions yet</span>
                           )}
                         </td>
                       </tr>
@@ -906,6 +895,13 @@ export function ExecutiveOperationsConsole() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 5: LANDING SHOWCASE & 90S BRIEFING LOOP */}
+        {activeTab === 'landing' && (
+          <div className="space-y-6">
+            <LandingShowcaseManager />
           </div>
         )}
       </main>

@@ -196,7 +196,12 @@ export function LandingShowcaseManager() {
 
       updateChapter(chapterId, { videoUrl: url })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Video upload failed.')
+      const msg = err instanceof Error ? err.message : 'Video upload failed.'
+      if (msg.includes('storage/unauthorized') || msg.includes('permission to access')) {
+        setError('Firebase Storage upload unauthorized: The storage rules require admin permissions or the bucket path is restricted. Please sign in as an admin, or paste the direct Firebase Storage URL into the Video URL field below.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setUploadingTarget(null)
     }
@@ -248,11 +253,11 @@ export function LandingShowcaseManager() {
       {/* Top Exit Navigation Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
         <Link
-          href="/portal/admin"
+          href="/portal/acquisition"
           className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-xs text-white/80 hover:bg-white/10 hover:text-white transition"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Admin Console
+          Back to Acquisition Console
         </Link>
 
         <div className="flex items-center gap-2">

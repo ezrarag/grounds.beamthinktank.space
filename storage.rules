@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public landing showcase media & 90s briefing loop videos
+    // Read: anyone can view landing media and briefing loop videos
+    // Write: authenticated users/admins
+    match /landing-media/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // User-owned uploads (profile avatars, work proof, etc.)
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // General property & asset attachments
+    match /properties/{propertyId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

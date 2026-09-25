@@ -66,5 +66,10 @@ Location: `grounds.beamthinktank.space/docs/CROSS-AGENT-STATUS.md` (this repo, s
   - **Tab 4: Stakeholder Meeting Agenda Queue**: Live items from `agendaQueue` submitted by Denail, DeTania, Rick, and Ezra, with status toggling ("Queued" vs "Addressed").
   - **Header Controls**: Direct switching between Acquisition Console, Landing & 90s Loop Manager, Participant View, and global Sign Out.
 
+- **Admin Roster Cleanup & Real Participant Data Only**: Removed all mock participants (Marcus Vance, Elena Rios) across `ExecutiveOperationsConsole.tsx`, `LiveDispatchMap.tsx`, and `ParticipantCommandCenter.tsx`. Grounded participant data in real data with Ezra (`ezra@readyaimgo.biz`), 72 approved sweat-equity hours, and explicit "No submissions yet" state since no project submissions have occurred yet. Filtered out test/mock records from Firestore snapshots.
+- **Embedded Landing Media & 90s Loop as 5th Operational Tab**: Added Tab 5 directly inside `ExecutiveOperationsConsole` (`/portal/acquisition`) and wired the header button to switch tabs without navigating away.
+- **Cleaned `/portal/admin/landing`**: Removed `PortalShell` wrapper, sidebar `MemberDashboard`, and redundant banners so only the clean executive workspace is rendered.
+- **Firebase Storage Rules & Unauthorized Error Handling**: Created `storage.rules` granting public read on `landing-media/**` and write access to authenticated users, added `storage` to `firebase.json`, and added clear UI error messaging advising on admin auth and direct URL fallback.
+
 ---
 *Next agent: add your entry above this line, newest first isn't required — just append.*
