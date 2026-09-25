@@ -1030,6 +1030,17 @@ export function ParticipantProfileWorkspace() {
                     {commandSearchError && (
                       <p className="text-xs text-rose-300 bg-rose-950/60 border border-rose-800/60 p-2.5 rounded-xl">{commandSearchError}</p>
                     )}
+
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        onClick={() => setSearchMode('map')}
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-[#102119] px-5 py-2.5 text-xs font-mono font-bold text-amber-300 hover:bg-[#183326] hover:border-amber-300 transition shadow-lg"
+                      >
+                        <MapIcon className="h-4 w-4 text-amber-400" />
+                        <span>🗺️ Open Full Screen Interactive Map</span>
+                      </button>
+                    </div>
                   </form>
                 )}
 
@@ -1049,6 +1060,7 @@ export function ParticipantProfileWorkspace() {
                       }}
                       liveAssets={liveAssets}
                       fullBleedMobile={true}
+                      onCloseMobileMap={() => setSearchMode('address')}
                     />
 
                     <MobileMapBottomSheet

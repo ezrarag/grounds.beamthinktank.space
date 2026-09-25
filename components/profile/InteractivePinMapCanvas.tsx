@@ -13,6 +13,7 @@ import {
   Locate,
   RotateCcw,
   Navigation,
+  ArrowLeft,
 } from 'lucide-react'
 import type { BeamAsset } from '@/lib/useAcquisitionSites'
 
@@ -24,6 +25,7 @@ interface InteractivePinMapCanvasProps {
   onInspectParcel: (coords: { lat: number; lng: number }) => void
   liveAssets?: BeamAsset[]
   fullBleedMobile?: boolean
+  onCloseMobileMap?: () => void
 }
 
 // Generate a GeoJSON circle polygon for 0.5-mile radius (approx 804.67 meters)
@@ -62,6 +64,7 @@ export function InteractivePinMapCanvas({
   onInspectParcel,
   liveAssets = [],
   fullBleedMobile = true,
+  onCloseMobileMap,
 }: InteractivePinMapCanvasProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -406,6 +409,17 @@ export function InteractivePinMapCanvas({
       <div className="fixed top-4 left-3 right-3 z-20 md:static md:w-full rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#091510]/90 p-3 space-y-2.5 text-left backdrop-blur-md shadow-2xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-hidden">
+            {onCloseMobileMap && (
+              <button
+                onClick={onCloseMobileMap}
+                type="button"
+                className="md:hidden inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold text-[#edf3ea] hover:bg-white/20 transition shrink-0"
+                title="Return to search console"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 text-amber-400" />
+                <span>Console</span>
+              </button>
+            )}
             <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
             <span className="font-mono text-xs font-bold text-[#edf3ea] truncate">
               {currentCoords.lat.toFixed(4)}° N, {currentCoords.lng.toFixed(4)}° W
