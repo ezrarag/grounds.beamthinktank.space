@@ -64,6 +64,8 @@ import { SearchHistoryDrawer } from '@/components/profile/SearchHistoryDrawer'
 import { PipelineProjectFeed } from '@/components/profile/PipelineProjectFeed'
 import { RedevelopmentPipelineBoard } from '@/components/redevelopment/RedevelopmentPipelineBoard'
 import { CivicPartnerLayer } from '@/components/profile/CivicPartnerLayer'
+import { MobileMapBottomSheet } from '@/components/map/MobileMapBottomSheet'
+import type { PropertyDispositionFilter } from '@/components/profile/InteractivePinMapCanvas'
 
 const InteractivePinMapCanvas = dynamic(
   () => import('@/components/profile/InteractivePinMapCanvas').then((mod) => mod.InteractivePinMapCanvas),
@@ -145,6 +147,7 @@ export function ParticipantProfileWorkspace() {
   const [profileTab, setProfileTab] = useState<ProfileTab>(null) // closed by default
   const [activeConsoleView, setActiveConsoleView] = useState<ConsoleViewMode>('search')
   const [searchMode, setSearchMode] = useState<SearchMode>('address')
+  const [dispositionFilter, setDispositionFilter] = useState<PropertyDispositionFilter>('all')
   const [userRegion, setUserRegion] = useState<UserTargetRegion>('MKE')
   
   const [firestorePhoto, setFirestorePhoto] = useState<string | null>(null)
@@ -1032,7 +1035,7 @@ export function ParticipantProfileWorkspace() {
 
                 {/* MODE 2: Interactive Pin Placement & Draggable Marker Canvas */}
                 {searchMode === 'map' && (
-                  <div className="max-w-3xl mx-auto">
+                  <div className="w-full max-w-3xl mx-auto">
                     <InteractivePinMapCanvas
                       center={userCoords || { lat: 43.0396, lng: -87.945 }}
                       onCoordsChange={(coords, autoInspect) => {
@@ -1045,6 +1048,32 @@ export function ParticipantProfileWorkspace() {
                         void handleExecuteParcelSearch(undefined, undefined, coords)
                       }}
                       liveAssets={liveAssets}
+                      fullBleedMobile={true}
+                    />
+
+                    <MobileMapBottomSheet
+                      currentCoords={userCoords || { lat: 43.0396, lng: -87.945 }}
+                      activeAddress={commandSearchInput || null}
+                      inspectedParcel={searchedParcelResult}
+                      dispositionFilter={dispositionFilter}
+                      onFilterChange={setDispositionFilter}
+                      onInspectCurrentCoords={() => {
+                        if (userCoords) {
+                          void handleExecuteParcelSearch(undefined, undefined, userCoords)
+                        }
+                      }}
+                      onSearchAddress={(query) => {
+                        setCommandSearchInput(query)
+                        void handleExecuteParcelSearch(undefined, query)
+                      }}
+                      searchInputValue={commandSearchInput}
+                      onSearchInputChange={setCommandSearchInput}
+                      searchingParcel={searchingParcel}
+                      onTakePhoto={() => setSearchMode('photo')}
+                      onOpenHistory={() => setHistoryDrawerOpen(true)}
+                      onOpenTestimony={() => {
+                        window.location.href = '/testimony'
+                      }}
                     />
                   </div>
                 )}

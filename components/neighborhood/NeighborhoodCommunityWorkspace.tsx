@@ -465,6 +465,7 @@ export function NeighborhoodCommunityWorkspace() {
           onInspectParcel={(coords) => {
             void handleExecuteSearch(undefined, coords)
           }}
+          fullBleedMobile={false}
         />
       </div>
 

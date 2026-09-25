@@ -23,6 +23,7 @@ interface InteractivePinMapCanvasProps {
   onCoordsChange: (coords: { lat: number; lng: number }, autoInspect?: boolean) => void
   onInspectParcel: (coords: { lat: number; lng: number }) => void
   liveAssets?: BeamAsset[]
+  fullBleedMobile?: boolean
 }
 
 // Generate a GeoJSON circle polygon for 0.5-mile radius (approx 804.67 meters)
@@ -60,6 +61,7 @@ export function InteractivePinMapCanvas({
   onCoordsChange,
   onInspectParcel,
   liveAssets = [],
+  fullBleedMobile = true,
 }: InteractivePinMapCanvasProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -399,171 +401,150 @@ export function InteractivePinMapCanvas({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Map Header Controls & GPS Coordinates Indicator */}
-      <div className="rounded-2xl border border-[rgba(237,243,234,0.14)] bg-[#102119]/90 p-4 space-y-3 text-left">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-amber-400" />
-            <span className="font-mono text-xs font-bold text-[#edf3ea]">
-              GPS Coordinates: {currentCoords.lat.toFixed(4)}° N, {currentCoords.lng.toFixed(4)}° W
+    <div className={`relative w-full ${fullBleedMobile ? 'fixed inset-0 h-[100dvh] w-screen z-0 md:relative md:h-auto md:w-full md:z-auto' : 'space-y-4'}`}>
+      {/* Layer 1: Top Floating Controls Island */}
+      <div className="fixed top-4 left-3 right-3 z-20 md:static md:w-full rounded-2xl border border-[rgba(237,243,234,0.18)] bg-[#091510]/90 p-3 space-y-2.5 text-left backdrop-blur-md shadow-2xl">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
+            <span className="font-mono text-xs font-bold text-[#edf3ea] truncate">
+              {currentCoords.lat.toFixed(4)}° N, {currentCoords.lng.toFixed(4)}° W
             </span>
-            <span className="rounded-full bg-amber-400/20 border border-amber-400/40 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-300">
+            <span className="hidden sm:inline-block rounded-full bg-amber-400/20 border border-amber-400/40 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-300 shrink-0">
               Draggable Pin Active
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Locate Me Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleFlyToUserLocation}
               disabled={locatingUser}
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 border border-amber-400/50 px-3 py-1 font-mono text-xs font-bold text-amber-300 hover:bg-amber-400/30 transition shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 font-mono text-xs font-bold text-black hover:bg-amber-300 transition shadow-md disabled:opacity-50"
               title="Fly map directly to your current device location"
             >
-              <Locate className={`h-3.5 w-3.5 text-amber-300 ${locatingUser ? 'animate-spin' : ''}`} />
-              <span>{locatingUser ? 'Locating...' : '🎯 Locate Me'}</span>
+              <Locate className={`h-3.5 w-3.5 text-black ${locatingUser ? 'animate-spin' : ''}`} />
+              <span>{locatingUser ? 'Locating...' : 'Locate Me'}</span>
             </button>
           </div>
         </div>
 
-        {/* Action Buttons: Zoom Controls Bar, Preset Pills, & Inspect Parcel */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[rgba(237,243,234,0.08)]">
-          {/* Custom On-Screen Zoom & Control Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Zoom In & Out Buttons */}
-            <div className="inline-flex rounded-full border border-white/15 bg-white/[0.05] p-0.5">
-              <button
-                onClick={handleZoomIn}
-                type="button"
-                className="rounded-full p-1.5 text-white hover:bg-white/15 transition"
-                title="Zoom In"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={handleZoomOut}
-                type="button"
-                className="rounded-full p-1.5 text-white hover:bg-white/15 transition border-l border-white/10"
-                title="Zoom Out"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Zoom Presets */}
-            <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 text-[10px] font-mono">
-              <button
-                onClick={() => handleSetZoomLevel(14)}
-                type="button"
-                className="rounded-full px-2 py-0.5 text-white/60 hover:text-white hover:bg-white/10 transition"
-              >
-                14x District
-              </button>
-              <button
-                onClick={() => handleSetZoomLevel(16.5)}
-                type="button"
-                className="rounded-full px-2 py-0.5 text-amber-300 font-bold bg-amber-400/10 transition"
-              >
-                16.5x Parcel
-              </button>
-              <button
-                onClick={() => handleSetZoomLevel(18.5)}
-                type="button"
-                className="rounded-full px-2 py-0.5 text-white/60 hover:text-white hover:bg-white/10 transition"
-              >
-                18.5x Building
-              </button>
-            </div>
-
-            {/* Style Switcher & North Reset */}
-            <button
-              onClick={handleToggleMapStyle}
-              type="button"
-              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-mono text-white/80 hover:bg-white/10 transition"
-              title="Toggle Satellite Imagery vs Dark Vector Streets"
-            >
-              <Layers className="h-3 w-3 text-grounds-sand" />
-              <span>{mapStyle === 'satellite' ? 'Satellite' : 'Vector'}</span>
-            </button>
-
-            <button
-              onClick={handleResetBearing}
-              type="button"
-              className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition"
-              title="Reset North & Flat Pitch"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {/* Property Disposition Category Filters */}
-          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] w-full pt-1 border-t border-white/10">
-            <span className="text-white/40 uppercase font-bold text-[9px] mr-1">Dispositions:</span>
-            <button
-              onClick={() => setDispositionFilter('all')}
-              type="button"
-              className={`rounded-full px-2.5 py-1 transition font-bold ${
-                dispositionFilter === 'all'
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              🌐 All Parcel Records
-            </button>
-            <button
-              onClick={() => setDispositionFilter('vacant')}
-              type="button"
-              className={`rounded-full px-2.5 py-1 transition font-bold ${
-                dispositionFilter === 'vacant'
-                  ? 'bg-amber-400 text-slate-950 shadow-sm'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              🌾 Vacant Lots &amp; Land Bank
-            </button>
-            <button
-              onClick={() => setDispositionFilter('foreclosed')}
-              type="button"
-              className={`rounded-full px-2.5 py-1 transition font-bold ${
-                dispositionFilter === 'foreclosed'
-                  ? 'bg-rose-500 text-white shadow-sm'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              ⚠️ Tax Lien / In-Rem
-            </button>
-            <button
-              onClick={() => setDispositionFilter('commercial')}
-              type="button"
-              className={`rounded-full px-2.5 py-1 transition font-bold ${
-                dispositionFilter === 'commercial'
-                  ? 'bg-sky-400 text-slate-950 shadow-sm'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              🏢 Commercial &amp; Mixed-Use Core
-            </button>
-            <button
-              onClick={() => setDispositionFilter('for_sale')}
-              type="button"
-              className={`rounded-full px-2.5 py-1 transition font-bold ${
-                dispositionFilter === 'for_sale'
-                  ? 'bg-purple-400 text-slate-950 shadow-sm'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              🏷️ For-Sale Assets
-            </button>
-          </div>
+        {/* Property Disposition Chips (Horizontally Swipeable on Mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-1 border-t border-[rgba(237,243,234,0.1)] font-mono text-[10px] no-scrollbar">
+          <span className="text-white/40 uppercase font-bold text-[9px] shrink-0 mr-0.5">Dispositions:</span>
+          <button
+            onClick={() => setDispositionFilter('all')}
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 transition font-bold shrink-0 ${
+              dispositionFilter === 'all'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20'
+            }`}
+          >
+            🌐 All
+          </button>
+          <button
+            onClick={() => setDispositionFilter('vacant')}
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 transition font-bold shrink-0 ${
+              dispositionFilter === 'vacant'
+                ? 'bg-amber-400 text-slate-950 shadow-sm'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20'
+            }`}
+          >
+            🌾 Vacant Lots
+          </button>
+          <button
+            onClick={() => setDispositionFilter('foreclosed')}
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 transition font-bold shrink-0 ${
+              dispositionFilter === 'foreclosed'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20'
+            }`}
+          >
+            ⚠️ Tax Lien
+          </button>
+          <button
+            onClick={() => setDispositionFilter('commercial')}
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 transition font-bold shrink-0 ${
+              dispositionFilter === 'commercial'
+                ? 'bg-sky-400 text-slate-950 shadow-sm'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20'
+            }`}
+          >
+            🏢 Commercial Core
+          </button>
+          <button
+            onClick={() => setDispositionFilter('for_sale')}
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 transition font-bold shrink-0 ${
+              dispositionFilter === 'for_sale'
+                ? 'bg-purple-400 text-slate-950 shadow-sm'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20'
+            }`}
+          >
+            🏷️ For-Sale Assets
+          </button>
         </div>
       </div>
 
-      {/* Interactive Map Canvas / Fallback Embed */}
-      <div className="relative h-[440px] w-full overflow-hidden rounded-3xl border border-[rgba(237,243,234,0.18)] bg-[#07100c] shadow-2xl">
+      {/* Layer 2: Right-Rail Floating Action Buttons */}
+      <div className="fixed right-3 top-28 z-20 flex flex-col gap-2 md:absolute md:top-auto md:bottom-4 md:right-4">
+        <button
+          onClick={handleFlyToUserLocation}
+          disabled={locatingUser}
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/60 bg-[#091510]/90 text-amber-300 shadow-2xl backdrop-blur-md hover:bg-amber-400/20 transition disabled:opacity-50"
+          title="Center on current device GPS location"
+        >
+          <Locate className={`h-4 w-4 ${locatingUser ? 'animate-spin' : ''}`} />
+        </button>
+
+        <button
+          onClick={handleToggleMapStyle}
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#091510]/90 text-white shadow-2xl backdrop-blur-md hover:bg-white/20 transition"
+          title="Toggle Satellite vs Dark Vector Map"
+        >
+          <Layers className="h-4 w-4 text-emerald-400" />
+        </button>
+
+        <button
+          onClick={handleResetBearing}
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#091510]/90 text-white/80 shadow-2xl backdrop-blur-md hover:bg-white/20 transition"
+          title="Reset North & Pitch"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </button>
+
+        <div className="flex flex-col rounded-full border border-white/20 bg-[#091510]/90 p-1 shadow-2xl backdrop-blur-md">
+          <button
+            onClick={handleZoomIn}
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-white/20 transition"
+            title="Zoom In"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          <div className="h-px bg-white/15 w-full my-0.5" />
+          <button
+            onClick={handleZoomOut}
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-white/20 transition"
+            title="Zoom Out"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Interactive Map Canvas Element */}
+      <div className={`relative w-full ${fullBleedMobile ? 'h-[100dvh] md:h-[480px] md:mt-3 md:rounded-3xl md:border md:border-[rgba(237,243,234,0.18)] md:shadow-2xl' : 'h-[440px] rounded-3xl border border-[rgba(237,243,234,0.18)] shadow-2xl'} overflow-hidden bg-[#07100c]`}>
         {!mapboxError ? (
-          <div ref={mapContainerRef} className="w-full h-full rounded-3xl" />
+          <div ref={mapContainerRef} className="w-full h-full" />
         ) : (
           <iframe
             title="Embedded Google Maps Fallback"
@@ -574,48 +555,11 @@ export function InteractivePinMapCanvas({
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
             src={`https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&z=16&output=embed`}
-            className="w-full h-full grayscale-[20%] rounded-3xl"
+            className="w-full h-full grayscale-[20%]"
           />
         )}
-
-        {/* Floating Controls Overlay on Canvas (Top-Left) */}
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          <button
-            onClick={handleFlyToUserLocation}
-            disabled={locatingUser}
-            type="button"
-            className="flex items-center gap-2 rounded-full border border-amber-400/50 bg-[#0b1712]/90 px-3.5 py-2 text-xs font-bold text-amber-300 shadow-2xl backdrop-blur-md hover:bg-[#102119] transition"
-          >
-            <Locate className={`h-4 w-4 text-amber-400 ${locatingUser ? 'animate-spin' : ''}`} />
-            <span>{locatingUser ? 'Locating GPS...' : 'Center On Me'}</span>
-          </button>
-        </div>
-
-        {/* Floating Zoom Buttons (Bottom-Right Canvas) */}
-        <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1 rounded-2xl border border-white/20 bg-[#0b1712]/90 p-1.5 shadow-2xl backdrop-blur-md">
-          <button
-            onClick={handleZoomIn}
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-white hover:bg-white/20 transition"
-            title="Zoom In"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <div className="h-px bg-white/15 w-full" />
-          <button
-            onClick={handleZoomOut}
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-white hover:bg-white/20 transition"
-            title="Zoom Out"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-        </div>
       </div>
-
-      <p className="text-center font-mono text-[11px] text-[rgba(237,243,234,0.6)]">
-        💡 <strong>Tip:</strong> Click <strong>&quot;Center On Me&quot;</strong> or <strong>&quot;🎯 Locate Me&quot;</strong> to jump to your exact current physical GPS location, or use the <strong>+ / -</strong> buttons and map drag to inspect 0.5-mile radius real estate intelligence.
-      </p>
     </div>
   )
 }
+
