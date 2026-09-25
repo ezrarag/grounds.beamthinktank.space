@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage, signOutUser } from '@/lib/firebase'
+import { db, storage, signOutUser, sanitizeForFirestore } from '@/lib/firebase'
 import {
   landingSlides,
   defaultOperatingLoopChapters,
@@ -220,15 +220,12 @@ export function LandingShowcaseManager() {
 
     try {
       const docRef = doc(db, 'landingConfig', 'showcase')
-      await setDoc(
-        docRef,
-        {
-          slides,
-          operatingLoopChapters: chapters,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      )
+      const payload = sanitizeForFirestore({
+        slides,
+        operatingLoopChapters: chapters,
+        updatedAt: serverTimestamp(),
+      })
+      await setDoc(docRef, payload, { merge: true })
 
       setSavedMessage('Landing showcase & 90-second operating loop successfully saved! Changes are live on the homepage.')
       setTimeout(() => setSavedMessage(null), 5000)

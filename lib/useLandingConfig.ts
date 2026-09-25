@@ -57,7 +57,16 @@ export function useLandingConfig(): LandingConfigState {
           }
 
           if (data.operatingLoopChapters && Array.isArray(data.operatingLoopChapters)) {
-            setChapters(data.operatingLoopChapters)
+            const mergedChapters = defaultOperatingLoopChapters.map((baseCh) => {
+              const remote = data.operatingLoopChapters.find((c: Partial<OperatingLoopChapter>) => c.id === baseCh.id)
+              if (!remote) return baseCh
+              return {
+                ...baseCh,
+                ...remote,
+                videoUrl: remote.videoUrl || baseCh.videoUrl,
+              }
+            })
+            setChapters(mergedChapters)
             setHasOverrides(true)
           }
         }

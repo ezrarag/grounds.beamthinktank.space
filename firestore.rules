@@ -64,6 +64,13 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Landing Configuration (Slide artwork, 90s loop videos, overrides)
+    // Publicly readable so visitors see custom artwork & briefing videos; admin writable.
+    match /landingConfig/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Public site suggestions: anyone may submit; only admins can read/manage.
     match /siteSuggestions/{suggestionId} {
       allow create: if request.resource.data.name is string
